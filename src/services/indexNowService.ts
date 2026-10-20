@@ -4,8 +4,8 @@
  * Live listings come from the public offer index (anon key, listings_public). Listings
  * that ended (expired, sold, archived) have left listings_public, and anonymous reads of
  * public.listings only see published rows (RLS), so those are read with the service-role
- * key, the same way brandIndexingService and listingLifecycleService do: one read-only
- * SELECT of id, brand, model, status, the end dates and the Kaufart columns. Only ever
+ * key, the same way brandIndexingService and listingLifecycleService do: read-only
+ * SELECTs of id, brand, model, status, the end dates and the Kaufart columns. Only ever
  * import this module from API routes.
  */
 import { createClient } from "@supabase/supabase-js";
@@ -16,8 +16,8 @@ const ENDED_COLUMNS =
   "id, brand, model, status, expires_at, sold_at, archived_at, published_at, " +
   "deal_type, financing_type, price_per_month_chf, remaining_months, leasing_offer, contract_end_date";
 
-/** Statuses a once-live listing can end in, plus "published" for rows past their expiry. */
-const ENDED_STATUSES = ["expired", "sold", "archived", "published"] as const;
+/** Statuses a once-live listing can end in. Rows still "published" past their expiry are read separately. */
+const ENDED_STATUSES = ["expired", "sold", "archived"] as const;
 
 /** Far above the listings that end within a day. */
 const ENDED_ROW_LIMIT = 1000;
@@ -32,26 +32,38 @@ async function readEndedRows(since: Date): Promise<IndexNowEndedRow[] | null> {
     return null;
   }
 
-  // Date only, one day of margin: a coarse pre-filter without PostgREST's reserved
-  // characters. collectIndexNowUrls applies the exact window.
+  // Dates only, one day of margin each side: a coarse pre-filter without PostgREST's
+  // reserved characters. collectIndexNowUrls applies the exact window.
   const sinceDate = new Date(since.getTime() - DAY_MS).toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + DAY_MS).toISOString().slice(0, 10);
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await admin
-    .from("listings")
-    .select(ENDED_COLUMNS)
-    .in("status", [...ENDED_STATUSES])
-    .not("published_at", "is", null)
-    .or(`sold_at.gte.${sinceDate},archived_at.gte.${sinceDate},expires_at.gte.${sinceDate}`)
-    .order("id")
-    .limit(ENDED_ROW_LIMIT);
-  if (error) throw error;
+  const endedQuery = () => admin.from("listings").select(ENDED_COLUMNS).not("published_at", "is", null);
+  // Two reads, so the live listings (published, expiry in the future) never fill the
+  // row limit: the ended statuses by their end dates, and the rows still "published"
+  // whose expiry falls in the window (past it, but not yet flipped by the status job).
+  const [ended, pastExpiry] = await Promise.all([
+    endedQuery()
+      .in("status", [...ENDED_STATUSES])
+      .or(`sold_at.gte.${sinceDate},archived_at.gte.${sinceDate},expires_at.gte.${sinceDate}`)
+      .order("id")
+      .limit(ENDED_ROW_LIMIT),
+    endedQuery()
+      .eq("status", "published")
+      .gte("expires_at", sinceDate)
+      .lt("expires_at", tomorrow)
+      .order("id")
+      .limit(ENDED_ROW_LIMIT),
+  ]);
+  if (ended.error) throw ended.error;
+  if (pastExpiry.error) throw pastExpiry.error;
 
-  const rows = (Array.isArray(data) ? data : []) as unknown as IndexNowEndedRow[];
-  if (rows.length >= ENDED_ROW_LIMIT) {
+  const endedRows = (Array.isArray(ended.data) ? ended.data : []) as unknown as IndexNowEndedRow[];
+  const pastExpiryRows = (Array.isArray(pastExpiry.data) ? pastExpiry.data : []) as unknown as IndexNowEndedRow[];
+  if (endedRows.length >= ENDED_ROW_LIMIT || pastExpiryRows.length >= ENDED_ROW_LIMIT) {
     console.warn("IndexNow: the ended-listings read hit its row limit; some rows are missing.", { limit: ENDED_ROW_LIMIT });
   }
-  return rows;
+  return [...endedRows, ...pastExpiryRows];
 }
 
 export function createIndexNowDataSource(): IndexNowDataSource {

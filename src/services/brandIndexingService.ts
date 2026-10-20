@@ -5,8 +5,8 @@
  * The grace period needs the Leasingübernahmen that ended recently. listings_public
  * only holds published, unexpired rows and anonymous reads of public.listings only
  * see published rows (RLS), so the ended ones are read with the service-role key, the
- * same key the billing API routes and listingLifecycleService use: one read-only
- * SELECT of brand, status, dates and the Kaufart columns, nothing else. Only ever
+ * same key the billing API routes and listingLifecycleService use: read-only
+ * SELECTs of brand, status, dates and the Kaufart columns, nothing else. Only ever
  * import this module from getServerSideProps, getStaticProps or API routes.
  *
  * Without the key, or when the read fails and no earlier result exists, the history
@@ -32,8 +32,8 @@ const HISTORY_COLUMNS =
   "id, brand, status, expires_at, sold_at, archived_at, published_at, " +
   "deal_type, financing_type, price_per_month_chf, leasing_offer, contract_end_date";
 
-/** Statuses a once-live listing can end in, plus "published" for rows past their expiry. */
-const HISTORY_STATUSES = ["expired", "sold", "archived", "published"] as const;
+/** Statuses a once-live listing can end in. Rows still "published" past their expiry are read separately. */
+const ENDED_STATUSES = ["expired", "sold", "archived"] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** The history changes when an offer ends; brand pages revalidate every 300 s too. */
@@ -48,26 +48,38 @@ async function readHistoryRows(now: Date): Promise<ListingHistoryRow[] | null> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return null;
 
-  // Date only (one day of margin): a coarse pre-filter without PostgREST's reserved
-  // characters. endedTakeoversFromRows applies the exact window.
+  // Dates only (one day of margin each side): a coarse pre-filter without PostgREST's
+  // reserved characters. endedTakeoversFromRows applies the exact window.
   const since = new Date(now.getTime() - (BRAND_PAGE_GRACE_DAYS + 1) * DAY_MS).toISOString().slice(0, 10);
+  const tomorrow = new Date(now.getTime() + DAY_MS).toISOString().slice(0, 10);
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await admin
-    .from("listings")
-    .select(HISTORY_COLUMNS)
-    .in("status", [...HISTORY_STATUSES])
-    .not("published_at", "is", null)
-    .or(`sold_at.gte.${since},archived_at.gte.${since},expires_at.gte.${since}`)
-    .order("id")
-    .limit(HISTORY_ROW_LIMIT);
-  if (error) throw error;
+  const history = () => admin.from("listings").select(HISTORY_COLUMNS).not("published_at", "is", null);
+  // Two reads, so the live listings (published, expiry in the future) never fill the
+  // row limit: the ended statuses by their end dates, and the rows still "published"
+  // whose expiry falls in the window (past it, but not yet flipped by the status job).
+  const [ended, pastExpiry] = await Promise.all([
+    history()
+      .in("status", [...ENDED_STATUSES])
+      .or(`sold_at.gte.${since},archived_at.gte.${since},expires_at.gte.${since}`)
+      .order("id")
+      .limit(HISTORY_ROW_LIMIT),
+    history()
+      .eq("status", "published")
+      .gte("expires_at", since)
+      .lt("expires_at", tomorrow)
+      .order("id")
+      .limit(HISTORY_ROW_LIMIT),
+  ]);
+  if (ended.error) throw ended.error;
+  if (pastExpiry.error) throw pastExpiry.error;
 
-  const rows = (Array.isArray(data) ? data : []) as unknown as ListingHistoryRow[];
-  if (rows.length >= HISTORY_ROW_LIMIT) {
+  const endedRows = (Array.isArray(ended.data) ? ended.data : []) as unknown as ListingHistoryRow[];
+  const pastExpiryRows = (Array.isArray(pastExpiry.data) ? pastExpiry.data : []) as unknown as ListingHistoryRow[];
+  if (endedRows.length >= HISTORY_ROW_LIMIT || pastExpiryRows.length >= HISTORY_ROW_LIMIT) {
     console.warn("Brand grace history hit the row limit; older rows are missing.", { limit: HISTORY_ROW_LIMIT });
   }
-  return rows;
+  return [...endedRows, ...pastExpiryRows];
 }
 
 /**

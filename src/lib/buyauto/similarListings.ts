@@ -68,3 +68,24 @@ export function rankSimilar<T>(
   });
   return scored.slice(0, Math.max(0, limit)).map((s) => s.candidate);
 }
+
+/**
+ * The offers before and after `id` in `ordered` (the hub's order for a
+ * Leasingübernahme, the Direktkauf view's order for a Direktkauf), wrapping around at
+ * both ends. The listing page links both, so every live offer gets links from two
+ * other listing pages, whatever its brand, on top of its hub card. Nothing when `id`
+ * is not in the list (an ended offer) or the list has fewer than two offers; with
+ * exactly two, the other one comes back once, as `next`.
+ */
+export function neighboursInOrder<T>(
+  ordered: readonly T[],
+  idOf: (item: T) => string,
+  id: string
+): { previous: T | null; next: T | null } {
+  const n = ordered.length;
+  const index = ordered.findIndex((item) => idOf(item) === id);
+  if (index === -1 || n < 2) return { previous: null, next: null };
+  const next = ordered[(index + 1) % n];
+  const previous = ordered[(index - 1 + n) % n];
+  return { previous: idOf(previous) === idOf(next) ? null : previous, next };
+}

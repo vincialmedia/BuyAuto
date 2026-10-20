@@ -1,9 +1,16 @@
 /**
- * Checks for the «Ähnliche Fahrzeuge» order: `npx tsx scripts/test-similar-listings.ts`.
+ * Checks for the «Ähnliche Fahrzeuge» order and the previous / next links on a listing
+ * page: `npx tsx scripts/test-similar-listings.ts`.
  * Exits non-zero on the first failed assertion.
  */
 import assert from "node:assert/strict";
-import { isPriceClose, rankSimilar, SIMILAR_PRICE_TOLERANCE, type SimilarityKeys } from "../src/lib/buyauto/similarListings";
+import {
+  isPriceClose,
+  neighboursInOrder,
+  rankSimilar,
+  SIMILAR_PRICE_TOLERANCE,
+  type SimilarityKeys,
+} from "../src/lib/buyauto/similarListings";
 
 type Candidate = SimilarityKeys & { id: string; rank: number };
 
@@ -106,5 +113,26 @@ assert.deepEqual(ids(rankSimilar({ brand: "Fiat", body: "SUV", price: 300 }, pla
 
 // The input array is not reordered.
 assert.deepEqual(ids(plain), ["x", "y", "z"]);
+
+// --- Previous / next in the hub order, wrapping around ------------------------
+const order = ["a", "b", "c", "d"].map((id) => ({ id }));
+const around = (id: string, list = order) => {
+  const { previous, next } = neighboursInOrder(list, (o) => o.id, id);
+  return [previous?.id ?? null, next?.id ?? null];
+};
+assert.deepEqual(around("b"), ["a", "c"]);
+assert.deepEqual(around("a"), ["d", "b"], "the first one links the last one");
+assert.deepEqual(around("d"), ["c", "a"], "the last one links the first one");
+assert.deepEqual(around("x"), [null, null], "an offer outside the order (ended) gets none");
+assert.deepEqual(around("a", order.slice(0, 2)), [null, "b"], "with two offers the other one comes once");
+assert.deepEqual(around("a", order.slice(0, 1)), [null, null], "a single offer has no neighbours");
+assert.deepEqual(around("a", []), [null, null]);
+// Every offer is linked from exactly two other offers (n >= 3).
+const linkedFrom = new Map<string, Set<string>>(order.map((o) => [o.id, new Set()]));
+for (const o of order) {
+  const { previous, next } = neighboursInOrder(order, (x) => x.id, o.id);
+  for (const target of [previous, next]) if (target) linkedFrom.get(target.id)?.add(o.id);
+}
+for (const [id, from] of linkedFrom) assert.equal(from.size, 2, `${id} is linked from two listings`);
 
 console.log("test-similar-listings: all checks passed");

@@ -9,7 +9,10 @@ import { DealerHeroHeader } from "@/components/buyauto/dealer/DealerHeroHeader";
 import { DealerAboutAndMap } from "@/components/buyauto/dealer/DealerAboutAndMap";
 import { DealerTeamAndHours } from "@/components/buyauto/dealer/DealerTeamAndHours";
 import { StructuredData } from "@/components/buyauto/StructuredData";
-import { isIndexableGarage } from "@/lib/buyauto/garageIndexing";
+import { isIndexableGarage, isRejectedOnlyByTestSlugPart } from "@/lib/buyauto/garageIndexing";
+
+// Slugs already logged by this server instance (see the test-slug warning below).
+const loggedTestSlugs = new Set<string>();
 
 type PublicGarage = NonNullable<Awaited<ReturnType<typeof getPublicGarageBySlug>>>;
 
@@ -61,11 +64,14 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       JSON.stringify(await searchDealerListingsOrThrow(garage.id, { page: 1, sort: "dateDesc" }))
     ) as SearchResult;
     // The same rule decides the sitemap entry (sitemap.xml.ts).
-    const indexable = isIndexableGarage({
-      slug: garage.slug,
-      description: garage.description,
-      liveListingCount: initialResults.total,
-    });
+    const indexingInput = { slug: garage.slug, description: garage.description, liveListingCount: initialResults.total };
+    const indexable = isIndexableGarage(indexingInput);
+    // A garage with text and listings that only a "test"/"demo" slug part keeps out of the
+    // index might be a real one: say so once, so a false positive does not stay invisible.
+    if (isRejectedOnlyByTestSlugPart(indexingInput) && !loggedTestSlugs.has(garage.slug)) {
+      loggedTestSlugs.add(garage.slug);
+      console.warn("Garage microsite kept noindex by a test slug part only:", { slug: garage.slug });
+    }
 
     return {
       props: {

@@ -3,7 +3,12 @@
  * Exits non-zero on the first failed assertion.
  */
 import assert from "node:assert/strict";
-import { isIndexableGarage, isPlausibleGarageSlug } from "../src/lib/buyauto/garageIndexing";
+import {
+  garageSlugRejection,
+  isIndexableGarage,
+  isPlausibleGarageSlug,
+  isRejectedOnlyByTestSlugPart,
+} from "../src/lib/buyauto/garageIndexing";
 
 // --- Slugs --------------------------------------------------------------------
 assert.ok(isPlausibleGarageSlug("garage-muster"));
@@ -30,5 +35,17 @@ assert.ok(!isIndexableGarage({ ...good, description: "" }), "empty description")
 assert.ok(!isIndexableGarage({ ...good, description: "   " }), "blank description");
 assert.ok(!isIndexableGarage({ ...good, description: null }));
 assert.ok(!isIndexableGarage({ ...good, slug: "pipi-kaka-ag" }), "test slug, even with listings and text");
+
+// --- Why a slug is rejected, and when the page logs it ---------------------------
+assert.equal(garageSlugRejection("garage-muster"), null);
+assert.equal(garageSlugRejection("pipi-kaka-ag"), "denylist");
+assert.equal(garageSlugRejection("garage-test-ag"), "test-part");
+assert.equal(garageSlugRejection("ab"), "letters");
+assert.equal(garageSlugRejection(" "), "empty");
+assert.ok(isRejectedOnlyByTestSlugPart({ ...good, slug: "demo-cars-ag" }), "text and a listing, only the test part rule says no");
+assert.ok(!isRejectedOnlyByTestSlugPart({ ...good, slug: "demo-cars-ag", description: "" }), "no text: noindex anyway");
+assert.ok(!isRejectedOnlyByTestSlugPart({ ...good, slug: "demo-cars-ag", liveListingCount: 0 }), "no listing: noindex anyway");
+assert.ok(!isRejectedOnlyByTestSlugPart({ ...good, slug: "pipi-kaka-ag" }), "denylisted on purpose");
+assert.ok(!isRejectedOnlyByTestSlugPart(good), "indexable");
 
 console.log("garage indexing: all checks passed");

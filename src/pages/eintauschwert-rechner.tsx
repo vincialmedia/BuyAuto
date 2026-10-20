@@ -86,11 +86,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "Wie viele Vergleichsfahrzeuge brauche ich für eine belastbare Occasionsbewertung?",
-    a: "3–5 vergleichbare Inserate (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) reichen in der Praxis. Der Rechner nutzt den Median der Preise (km-bereinigt, wenn du den Kilometerstand angibst) – so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht.",
+    a: "Ab 3 vergleichbaren Inseraten (gleiches Modell, ähnliches Alter, ähnliche Ausstattung) zeigt der Rechner einen einzelnen Wert. Bei weniger Inseraten oder stark streuenden Preisen zeigt er eine Spanne. Er nutzt den Median der Preise (km-bereinigt, wenn du den Kilometerstand angibst), so verzerrt ein einzelnes überteuertes oder verschleudertes Inserat das Ergebnis nicht.",
   },
   {
     q: "Ersetzt der Rechner eine Eurotax-Bewertung?",
-    a: "Nein, er ergänzt sie. Eurotax liefert einen katalogbasierten Richtwert (kostenpflichtig), unser Rechner arbeitet mit echten, aktuellen Inseratspreisen aus deiner Region. Viele Händler nutzen bewusst beide Quellen: Katalogwert als Anker, Marktpreise als Realitätscheck.",
+    a: "Nein, er ergänzt sie. Eurotax liefert einen katalogbasierten Richtwert (kostenpflichtig), unser Rechner arbeitet mit echten, aktuellen Inseratspreisen von Schweizer Occasions-Portalen. Du kannst beide nutzen: den Katalogwert als Anker, die Marktpreise als Realitätscheck.",
   },
   {
     q: "Was ist der Unterschied zwischen Eintausch und Inzahlungnahme?",
@@ -161,7 +161,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
         <title>Eintauschwert berechnen (Schweiz): Ankaufsrechner für Garagen | BuyAuto</title>
         <meta
           name="description"
-          content="Eintauschwert & Ankaufspreis in 2 Minuten berechnen: Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit & Marge. Gratis für Garagen & Händler."
+          content="Eintauschwert und Ankaufspreis berechnen: Marktwert aus echten Schweizer Vergleichsinseraten, minus Aufbereitung, Garantie, Standzeit und Marge."
         />
         <link rel="canonical" href={canonical} />
         <script
@@ -216,7 +216,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             <p className="text-lg md:text-xl text-neutral-300 leading-relaxed mb-6 max-w-2xl mx-auto">
               Der Eintauschwert ist der Preis, den die Garage beim Eintausch zahlt: Marktwert minus
               Aufbereitung, Garantie-Rückstellung, Standzeit und Marge. Gib Marke, Modell und
-              Jahrgang ein – Ausführung (z.B. Golf R) und Kilometerstand sind optional, machen den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert in 2 Minuten den Ankaufspreis samt Rechenweg fürs
+              Jahrgang ein – Ausführung (z.B. Golf R) und Kilometerstand sind optional, machen den Wert aber präziser. Der Rechner zieht echte Vergleichsinserate bei und liefert den Ankaufspreis samt Rechenweg fürs
               Kundengespräch.
             </p>
 
@@ -273,7 +273,7 @@ export default function EintauschwertRechnerPage({ updatedDate }: PageProps) {
             </div>
             <div className="prose prose-lg text-neutral-700 max-w-none">
               <p>
-                Der <strong>Marktwert</strong> ist der Median von 3–5 vergleichbaren Inseraten – je
+                Der <strong>Marktwert</strong> ist der Median deiner Vergleichsinserate – je
                 genauer Ausführung, Getriebe und Antrieb angegeben sind, desto passender die
                 Vergleichsbasis. Gibst du den Kilometerstand an und hat ein Vergleichsauto mehr oder
                 weniger Kilometer als deins, wird sein Preis automatisch angeglichen – rund 5% des

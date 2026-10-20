@@ -34,7 +34,7 @@ The bare `/suche` and any other `/suche` view (extra filters, sort, pagination, 
 | `/auth` | Login and registration: `noindex, follow` (PR C) |
 | `/inserat-erstellen`, `/garage-plan`, dashboards, embeds | App screens, noindex. `/dashboard*` and `/admin` are also disallowed in robots.txt. `/inserat-erstellen` now stays noindex after hydration too (it used to switch to `index, follow`; PR C changed only that meta tag, not the listing flow) |
 | Brand pages with 0 live offers, or 1 without a second takeover live in the last 30 days | `noindex, follow`, no canonical, out of the sitemap, never linked |
-| Garage microsites without a description, without a live listing, or with a test slug | `noindex, follow`, no canonical, out of the sitemap (`garageIndexing.ts`: a denylist plus test/demo slugs and slugs with fewer than 3 letters) |
+| Garage microsites without a description, without a live listing, or with a test slug | `noindex, follow`, no canonical, out of the sitemap (`garageIndexing.ts`: a denylist plus test/demo slugs and slugs with fewer than 3 letters; the test/demo rule goes beyond the denylist, so a garage with text and a live listing that only it keeps out is logged once, for Vince to check) |
 | `/suche` (no filters) | Lists the hub's offers again plus Direktkauf, so it would compete with the hub. A search tool for visitors: server-rendered, `noindex, follow`, out of the sitemap and llms.txt (PR #84) |
 
 ## Retired URLs

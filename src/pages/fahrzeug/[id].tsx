@@ -7,17 +7,20 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Listing, ListingDetail } from "@/lib/buyauto/types";
 import {
+  getListingNeighbours,
   getPublicOfferIndex,
   getPublishedListingById,
   getSimilarListings,
   getUserListingById,
   transformPublicRowToListingDetail,
+  type ListingNeighbour,
   type PublicOffer,
 } from "@/services/listingsService";
 import { brandPageForDbBrand } from "@/lib/buyauto/leasingBrands";
 import { indexableBrandPagesFor } from "@/services/brandIndexingService";
 import { estimateTeaserMonthlyRateChf } from "@/lib/buyauto/leasingMath";
 import { ListingDetailV2 } from "@/components/buyauto/detail/ListingDetailV2";
+import { ListingNeighbourLinks } from "@/components/buyauto/detail/ListingNeighbourLinks";
 import { getGaragePublicById } from "@/services/garageService";
 import type { GaragePublicInfo } from "@/services/garageService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,6 +61,8 @@ interface ListingDetailPageProps {
   similarListings?: Listing[];
   // Indexable brand page of a Leasingübernahme (server-rendered link); null otherwise.
   brandPage?: ListingBrandPage | null;
+  // Previous / next live offer in the hub's (or the Direktkauf view's) order.
+  neighbours?: { previous: ListingNeighbour | null; next: ListingNeighbour | null } | null;
 }
 
 type ListingBrandPage = { slug: string; name: string };
@@ -101,6 +106,7 @@ export default function ListingDetailPage({
   gone,
   similarListings,
   brandPage,
+  neighbours,
 }: ListingDetailPageProps) {
   const router = useRouter();
   const { id } = router.query;
@@ -533,6 +539,13 @@ export default function ListingDetailPage({
               listing={listing}
               initialListings={listing.id === initialListing?.id ? similarListings : undefined}
             />
+            {listing.id === initialListing?.id && neighbours && (
+              <ListingNeighbourLinks
+                previous={neighbours.previous}
+                next={neighbours.next}
+                isTakeover={kaufart === "lease_takeover"}
+              />
+            )}
           </div>
         }
       />
@@ -690,12 +703,14 @@ export const getServerSideProps: GetServerSideProps<ListingDetailPageProps> = as
     // Similar cards (prices, links) are part of the server HTML, not a client fetch.
     const similarListings = JSON.parse(JSON.stringify(await getSimilarListings(listing, 6, offerIndex))) as Listing[];
     const brandPage = offerIndex ? await listingBrandPage(listing, offerIndex) : null;
+    // Crawl path for every live offer, also one no other listing ranks as similar.
+    const neighbours = offerIndex ? getListingNeighbours(listing, offerIndex) : null;
 
     if (context.res) {
       context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
     }
 
-    return { props: { listing: serializedListing, similarListings, brandPage } };
+    return { props: { listing: serializedListing, similarListings, brandPage, neighbours } };
   } catch (error) {
     console.error("Error in getServerSideProps for [id].tsx:", error);
     // Transient backend failure: signal 503 (retry later) instead of a 200 skeleton that

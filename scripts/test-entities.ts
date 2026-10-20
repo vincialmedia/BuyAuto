@@ -20,8 +20,9 @@ import { FOUNDER_TAKEOVER } from "../src/lib/buyauto/facts";
 
 assert.equal(ORGANIZATION_ID, "https://www.buyauto.ch/#organization");
 assert.equal(FOUNDER_PERSON_ID, "https://www.buyauto.ch/#vincent-haenggi");
-assert.deepEqual(ORGANIZATION_REF, { "@id": ORGANIZATION_ID });
-assert.deepEqual(FOUNDER_REF, { "@id": FOUNDER_PERSON_ID });
+// References keep the @id and add only @type and name (the same entity, no new fact).
+assert.deepEqual(ORGANIZATION_REF, { "@type": "Organization", "@id": ORGANIZATION_ID, name: ORGANIZATION_JSON_LD.name });
+assert.deepEqual(FOUNDER_REF, { "@type": "Person", "@id": FOUNDER_PERSON_ID, name: FOUNDER_NAME });
 assert.equal(FOUNDER_NAME, FOUNDER_TAKEOVER.person, "same name as the founder facts");
 
 assert.equal(ORGANIZATION_JSON_LD["@id"], ORGANIZATION_ID);

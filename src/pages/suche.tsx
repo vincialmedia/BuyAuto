@@ -563,8 +563,15 @@ export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({ 
     }
     // These views are the same for every visitor — let the CDN serve them.
     res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
-    // Strip any `undefined` fields so Next can serialize the props.
-    const initialResults = JSON.parse(JSON.stringify(results)) as SearchResult;
+    // Strip any `undefined` fields so Next can serialize the props. The result cards and
+    // the ItemList never read the description or the image gallery (a card shows
+    // imageUrl), so they stay out of the page data: with up to HUB_PAGE_SIZE cards they
+    // were most of it. A client-side search still loads full rows.
+    const cards: SearchResult = {
+      ...results,
+      items: results.items.map((item) => ({ ...item, description: undefined, images: [] })),
+    };
+    const initialResults = JSON.parse(JSON.stringify(cards)) as SearchResult;
     return { props: { initialResults, initialQuery, brandPages } };
   } catch (error) {
     // Transient backend failure: 503 (retry later), never a cached "0 Autos" page.

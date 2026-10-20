@@ -20,15 +20,33 @@ export const GARAGE_TEST_SLUG_PARTS: readonly string[] = ["test", "demo", "dummy
 /** A real garage slug carries at least this many letters. */
 export const GARAGE_SLUG_MIN_LETTERS = 3;
 
+/** Why a slug is not treated as a real garage's, or null when it is. */
+export function garageSlugRejection(slug: string | null | undefined): "empty" | "denylist" | "test-part" | "letters" | null {
+  const normalized = (slug ?? "").trim().toLowerCase();
+  if (!normalized) return "empty";
+  if (GARAGE_SLUG_DENYLIST.includes(normalized)) return "denylist";
+  const parts = normalized.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  if (parts.some((part) => GARAGE_TEST_SLUG_PARTS.includes(part))) return "test-part";
+  const letters = normalized.match(/\p{L}/gu)?.length ?? 0;
+  return letters >= GARAGE_SLUG_MIN_LETTERS ? null : "letters";
+}
+
 /** False for denylisted slugs, test or demo slugs and slugs with fewer than 3 letters. */
 export function isPlausibleGarageSlug(slug: string | null | undefined): boolean {
-  const normalized = (slug ?? "").trim().toLowerCase();
-  if (!normalized) return false;
-  if (GARAGE_SLUG_DENYLIST.includes(normalized)) return false;
-  const parts = normalized.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-  if (parts.some((part) => GARAGE_TEST_SLUG_PARTS.includes(part))) return false;
-  const letters = normalized.match(/\p{L}/gu)?.length ?? 0;
-  return letters >= GARAGE_SLUG_MIN_LETTERS;
+  return garageSlugRejection(slug) === null;
+}
+
+/**
+ * True when only a test or demo part of the slug keeps a garage out of the index: it
+ * has a description and a live listing. That part rule goes beyond the denylist, so
+ * the page logs such a garage (its slug is public, its URL) for Vince to check.
+ */
+export function isRejectedOnlyByTestSlugPart(input: GarageIndexingInput): boolean {
+  return (
+    garageSlugRejection(input.slug) === "test-part" &&
+    (input.description ?? "").trim() !== "" &&
+    input.liveListingCount >= GARAGE_MIN_INDEXABLE_LISTINGS
+  );
 }
 
 export interface GarageIndexingInput {

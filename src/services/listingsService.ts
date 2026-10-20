@@ -8,7 +8,7 @@ import { publicSellerName } from "@/lib/buyauto/sellerName";
 import { displayLocation } from "@/lib/buyauto/location";
 import { computeInventoryStats, type InventoryStats } from "@/lib/buyauto/facts";
 import { orderPremiumListings, PREMIUM_LISTINGS_QUERY } from "@/lib/buyauto/premiumListings";
-import { rankSimilar } from "@/lib/buyauto/similarListings";
+import { neighboursInOrder, rankSimilar } from "@/lib/buyauto/similarListings";
 
 type PublicListingRow = Database["public"]["Views"]["listings_public"]["Row"];
 type ListingsTableRow = Database["public"]["Tables"]["listings"]["Row"];
@@ -984,6 +984,30 @@ export async function getSimilarListings(
     console.error("Get similar listings error:", error);
     return [];
   }
+}
+
+/** What a previous / next link on a listing page needs. */
+export type ListingNeighbour = { id: string; brand: string | null; model: string | null; year: number | null };
+
+/**
+ * The live offers before and after this listing in its view's order: the hub's for a
+ * Leasingübernahme (/suche?dealType=lease_takeover), the Direktkauf view's for a
+ * Direktkauf (same filter and relevance sort as runOfferSearch), wrapping around.
+ * Pure over an offer index the caller already read.
+ */
+export function getListingNeighbours(
+  listing: ListingDetail,
+  offers: PublicOffer[]
+): { previous: ListingNeighbour | null; next: ListingNeighbour | null } {
+  const scope: KaufartScope =
+    kaufartOf(listing) === "lease_takeover"
+      ? { bucket: "lease_takeover", priceMode: "monthly" }
+      : { bucket: "direct_purchase", priceMode: "purchase" };
+  const ordered = offers.filter((o) => inKaufartScope(o, scope)).sort(compareOffers("relevance", scope));
+  const { previous, next } = neighboursInOrder(ordered, (o) => o.id, listing.id);
+  const link = (o: PublicOffer | null): ListingNeighbour | null =>
+    o ? { id: o.id, brand: o.brand ?? null, model: o.model ?? null, year: o.year ?? null } : null;
+  return { previous: link(previous), next: link(next) };
 }
 
 export async function getUserListingById(id: string): Promise<ListingDetail | null> {
