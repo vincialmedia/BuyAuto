@@ -1,4 +1,33 @@
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { readGoogleNames } from "@/lib/buyauto/googleSignIn";
+
+/**
+ * Lets SSR and the middleware see a session the browser just received: sets
+ * the auth cookies server-side, then gives them a moment to settle.
+ */
+async function syncServerSession(session: Session | null | undefined) {
+  if (!session?.access_token || !session.refresh_token) return;
+
+  try {
+    const resp = await fetch("/api/auth-set-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error("Failed to set session cookie:", await resp.text());
+    }
+  } catch (e) {
+    console.error("Error setting session cookie:", e);
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 250));
+}
 
 interface SignInData {
   email: string;
@@ -37,31 +66,52 @@ const authService = {
     console.log("Sign in successful, session:", data.session);
 
     // Ensure SSR/middleware can see the session: set auth cookies server-side
-    if (data.session?.access_token && data.session.refresh_token) {
-      try {
-        const resp = await fetch("/api/auth-set-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          }),
-        });
+    await syncServerSession(data.session);
 
-        if (!resp.ok) {
-          console.error("Failed to set session cookie:", await resp.text());
-        }
-      } catch (e) {
-        console.error("Error setting session cookie:", e);
-      }
-    }
+    return data;
+  },
 
-    // Wait a moment to ensure session is properly set on server
-    if (data.session) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+  /**
+   * Signs in with the ID token from Google's button. Supabase creates the
+   * account on first use (the profile trigger takes Google's full name) and
+   * links Google to an existing account with the same verified e-mail.
+   * Resolves as soon as the session exists; call finishGoogleSignIn next.
+   */
+  async signInWithGoogle({ token, nonce }: { token: string; nonce: string }) {
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token,
+      nonce,
+    });
+
+    if (error) {
+      console.error("Auth service Google sign in error:", error);
+      throw error;
     }
 
     return data;
+  },
+
+  /**
+   * After signInWithGoogle: sets the server-side session cookies and, when
+   * the account has no first name yet (new Google account), stores Google's
+   * first and last name the way an e-mail sign-up does. Never throws: the
+   * person is signed in either way.
+   */
+  async finishGoogleSignIn({ session, user, idToken }: { session: Session | null; user: User; idToken: string }) {
+    await syncServerSession(session);
+
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const hasFirstName = typeof meta.first_name === "string" && meta.first_name.trim() !== "";
+    if (hasFirstName) return;
+
+    const names = readGoogleNames(idToken);
+    if (!names) return;
+
+    const { error } = await supabase.auth.updateUser({
+      data: { first_name: names.firstName, last_name: names.lastName },
+    });
+    if (error) console.error("Could not store the name from Google:", error);
   },
 
   async signUp({ email, password, firstName, lastName, newsletterConsent, accountType, garageName, city, contactEmail, emailRedirectTo }: SignUpData) {

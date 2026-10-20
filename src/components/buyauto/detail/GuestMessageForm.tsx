@@ -15,6 +15,8 @@ import {
   type GuestMessageResponse,
 } from "@/lib/buyauto/guestMessage";
 import { SendHorizontal } from "lucide-react";
+import GoogleSignInButton from "@/components/buyauto/auth/GoogleSignInButton";
+import { canOfferGoogleSignIn } from "@/lib/buyauto/googleSignIn";
 
 /** How logging in an existing account from the form went (the send that follows is the panel's). */
 export type GuestLoginResult = "logged_in" | "invalid_credentials" | "email_not_confirmed" | "failed";
@@ -28,13 +30,18 @@ export interface GuestMessageFormProps {
    * form unmounts and the panel shows how the send went.
    */
   onExistingAccount: (email: string, password: string, message: string) => Promise<GuestLoginResult>;
+  /**
+   * Signed in with Google (new or existing account): send `message` through
+   * the logged-in chat. Called the moment the session exists.
+   */
+  onGoogleSignIn?: (message: string, isNewAccount: boolean) => Promise<void>;
 }
 
 type FormError = { text: string; showPasswordReset?: boolean };
 
 const inputClass = "h-11 rounded-xl border-neutral-200 focus-visible:ring-neutral-400";
 
-export function GuestMessageForm({ listingId, dealType, onExistingAccount }: GuestMessageFormProps) {
+export function GuestMessageForm({ listingId, dealType, onExistingAccount, onGoogleSignIn }: GuestMessageFormProps) {
   const router = useRouter();
 
   const [message, setMessage] = useState(() => guestMessagePrefill(dealType));
@@ -74,7 +81,13 @@ export function GuestMessageForm({ listingId, dealType, onExistingAccount }: Gue
       });
     } else if (result === "invalid_credentials") {
       setFieldError({ field: "password", text: "Mit dieser E-Mail gibt es schon ein Konto, aber das Passwort stimmt nicht." });
-      setFormError({ text: "Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen.", showPasswordReset: true });
+      setFormError({
+        // An account created with Google has no password until one is set.
+        text: onGoogleSignIn && canOfferGoogleSignIn()
+          ? "Konto mit Google erstellt? Dann nutze oben «Weiter mit Google». Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen."
+          : "Passwort vergessen? Auf der Login-Seite kannst du es zurücksetzen.",
+        showPasswordReset: true,
+      });
     } else if (result === "failed") {
       setFormError({ text: "Das Einloggen hat nicht geklappt. Bitte versuch es nochmals." });
     }
@@ -192,6 +205,16 @@ export function GuestMessageForm({ listingId, dealType, onExistingAccount }: Gue
         />
         {errorFor("message") ? <p className="text-xs text-red-600">{errorFor("message")}</p> : null}
       </div>
+
+      {onGoogleSignIn ? (
+        <GoogleSignInButton
+          divider="below"
+          showTerms
+          termsLead="Mit «Weiter mit Google» geht deine Nachricht sofort an den Anbieter, und du akzeptierst"
+          disabled={busy}
+          onSession={({ isNewAccount }) => onGoogleSignIn(message, isNewAccount)}
+        />
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5 min-w-0">

@@ -2,7 +2,7 @@ import Head from "next/head";
 
 // Fixed revision date (see agb.tsx): a privacy policy carries the date it was
 // last changed, and a static value avoids a post-hydration text swap.
-const DATENSCHUTZ_STAND = "04.10.2026";
+const DATENSCHUTZ_STAND = "21.10.2026";
 
 export default function Datenschutz() {
   return (
@@ -73,6 +73,26 @@ export default function Datenschutz() {
               </ul>
               <p className="mb-4">
                 Diese Daten werden in unserer Datenbank bei <strong>Supabase</strong> gespeichert. Die Datenhaltung erfolgt auf Servern in der Schweiz (Zürich, AWS-Infrastruktur).
+              </p>
+
+              <h3 id="anmeldung-mit-google" className="text-lg font-medium mb-2 scroll-mt-24">Anmeldung mit Google</h3>
+              <p className="mb-4">
+                Sie können sich statt mit E-Mail-Adresse und Passwort auch mit Ihrem Google-Konto registrieren und anmelden («Weiter mit Google»). Anbieter dieses Dienstes ist die Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland). Die Schaltfläche lädt einen Dienst von Google, sobald sie auf Ihrem Bildschirm erscheint (auf der Anmeldeseite, beim Veröffentlichen eines Inserats und beim Nachrichtenformular eines Inserats, wenn Sie nicht angemeldet sind). Dabei erhält Google technische Daten wie Ihre IP-Adresse und die aufgerufene Seite; sind Sie bei Google angemeldet, kann Google diesen Aufruf Ihrem Google-Konto zuordnen.
+              </p>
+              <p className="mb-4">
+                Wählen Sie «Weiter mit Google» und bestätigen Sie die Anmeldung bei Google, übermittelt Google uns Ihren Namen, Ihre E-Mail-Adresse und ob Google diese bestätigt hat, einen Link zu Ihrem Google-Profilbild, eine Kennung Ihres Google-Kontos sowie bei Konten einer Organisation deren Domain. Damit legen wir Ihr BuyAuto-Konto an oder melden Sie an. Gibt es bereits ein BuyAuto-Konto mit derselben E-Mail-Adresse, verknüpfen wir Ihr Google-Konto damit. Auf weitere Daten in Ihrem Google-Konto, etwa E-Mails, Kontakte oder Dateien, erhalten wir keinen Zugriff. Google kann die Daten auch in den USA bearbeiten.
+              </p>
+              <p className="mb-4">
+                Rechtsgrundlage ist die Durchführung des Nutzungsvertrags, den Sie mit der Registrierung abschliessen (Art. 6 Abs. 1 lit. b DSGVO bzw. Art. 31 Abs. 2 lit. a DSG). Die Verbindung zwischen Ihrem Google-Konto und BuyAuto können Sie jederzeit in den Einstellungen Ihres Google-Kontos entfernen; Ihr BuyAuto-Konto bleibt dabei bestehen. Die Löschung der Daten, die wir bereits erhalten haben, können Sie bei <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a> verlangen. Weitere Informationen finden Sie in der{" "}
+                <a
+                  href="https://policies.google.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-600 hover:underline"
+                >
+                  Datenschutzerklärung von Google
+                </a>
+                .
               </p>
 
               <h3 id="eintauschwert-rechner" className="text-lg font-medium mb-2 scroll-mt-24">Beim Eintauschwert-Rechner</h3>
@@ -181,6 +201,13 @@ export default function Datenschutz() {
                 </li>
                 <li>
                   <strong>Vercel:</strong> Für das Hosting der Website und die Auslieferung von Inhalten.
+                </li>
+                <li>
+                  <strong>Google:</strong> Für die Anmeldung mit Google, wenn Sie diese wählen (siehe{" "}
+                  <a href="#anmeldung-mit-google" className="text-red-600 hover:underline">
+                    Anmeldung mit Google
+                  </a>
+                  ).
                 </li>
               </ul>
             </section>

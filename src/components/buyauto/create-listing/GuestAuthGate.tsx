@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queueLoginEvent, setUser, track } from "@/lib/analytics";
 import authService from "@/services/authService";
+import GoogleSignInButton from "@/components/buyauto/auth/GoogleSignInButton";
 
 /**
  * Shown at the final step when a guest (not logged in) wants to publish. They
@@ -120,6 +121,21 @@ export default function GuestAuthGate() {
           </p>
         </div>
       </div>
+
+      {/* Google signs in on the spot, no confirmation e-mail: the wizard is
+          still in memory, so it carries on to publishing like after a login. */}
+      <GoogleSignInButton
+        className="mt-5"
+        divider="below"
+        showTerms
+        disabled={loading}
+        onSignedIn={({ isNewAccount }) => {
+          toast({
+            title: isNewAccount ? "Konto erstellt!" : "Willkommen zurück!",
+            description: "Dein Inserat wird jetzt veröffentlicht.",
+          });
+        }}
+      />
 
       <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-neutral-100 p-1 text-sm font-medium">
         <button

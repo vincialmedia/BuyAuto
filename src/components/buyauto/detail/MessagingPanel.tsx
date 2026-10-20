@@ -287,6 +287,24 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
       return "failed";
     }
 
+    await sendHandoffMessage(body, false);
+    return "logged_in";
+  }
+
+  // Signed in with Google from the guest form: the session exists already,
+  // so the typed message goes out right away (GA4 sign_up/login is the
+  // button's). An empty message just leaves the person in the chat.
+  async function sendAfterGoogle(body: string, newAccount: boolean) {
+    const text = body.trim();
+    if (!text) return;
+    await sendHandoffMessage(text, newAccount);
+  }
+
+  // The guest's first message, sent through the logged-in chat once the
+  // session exists. The guest form has unmounted by then, so the outcome
+  // shows in the handoff notice.
+  async function sendHandoffMessage(body: string, newAccount: boolean) {
+    setHandoff({ phase: "sending" });
     const existingConvId = await getExistingConversationForListing(listingId);
     let convId = existingConvId;
     let failure: string | null = null;
@@ -307,7 +325,7 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
           listing_id: listingId,
           value: 0,
           currency: "CHF",
-          new_account: false,
+          new_account: newAccount,
         });
       }
       setHandoff(null);
@@ -320,7 +338,6 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
       setHandoff({ phase: "failed", text: "Du bist eingeloggt, aber die Nachricht konnte nicht gesendet werden." });
     }
     setReloadKey((key) => key + 1);
-    return "logged_in";
   }
 
   async function handleSend() {
@@ -423,7 +440,12 @@ export function MessagingPanel({ listingId, listingTitle, ownerId, isSold, dealT
         <CardContent className="p-6">
           {header}
           {isGuest ? (
-            <GuestMessageForm listingId={listingId} dealType={dealType} onExistingAccount={logInAndSend} />
+            <GuestMessageForm
+              listingId={listingId}
+              dealType={dealType}
+              onExistingAccount={logInAndSend}
+              onGoogleSignIn={sendAfterGoogle}
+            />
           ) : (
             <div className="mt-5 space-y-3" aria-hidden="true">
               <div className="h-24 bg-neutral-50 rounded-2xl border border-neutral-200 animate-pulse" />

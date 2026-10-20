@@ -578,9 +578,12 @@ export type PurchaseItem = {
   quantity: 1;
 };
 
+/** How someone signed up or logged in. */
+export type AuthMethod = "email" | "google";
+
 export interface EventMap {
-  sign_up: { method: "email" };
-  login: { method: "email" };
+  sign_up: { method: AuthMethod };
+  login: { method: AuthMethod };
   listing_start: { deal_type: DealType; entry_page: string };
   listing_step: { funnel_step: number; step_name: string; deal_type: DealType };
   listing_published: {
@@ -676,10 +679,11 @@ export function trackOncePerSession<E extends AnalyticsEvent>(dedupeKey: string,
 // an admin signing in never produces a `login` hit and the event carries the
 // user_id. AnalyticsProvider flushes it.
 const PENDING_LOGIN_KEY = "ba_pending_login";
+const PENDING_LOGIN_MAX_AGE_MS = 5 * 60 * 1000;
 
-export function queueLoginEvent() {
+export function queueLoginEvent(method: AuthMethod = "email") {
   if (typeof window === "undefined") return;
-  writeStorage("session", PENDING_LOGIN_KEY, String(Date.now()));
+  writeStorage("session", PENDING_LOGIN_KEY, `${method}:${Date.now()}`);
 }
 
 /** Drops a queued login event (the sign-in it was queued for failed). */
@@ -688,13 +692,26 @@ export function clearQueuedLoginEvent() {
   writeStorage("session", PENDING_LOGIN_KEY, null);
 }
 
+/**
+ * Reads a queued login ("google:<ms>", or a bare timestamp as written before
+ * the method was stored). Null when nothing is queued or it is too old.
+ */
+export function parsePendingLogin(raw: string | null | undefined, now: number = Date.now()): { method: AuthMethod } | null {
+  if (!raw) return null;
+  const separator = raw.indexOf(":");
+  const methodPart = separator >= 0 ? raw.slice(0, separator) : "email";
+  const queuedAt = Number(separator >= 0 ? raw.slice(separator + 1) : raw);
+  if (!queuedAt || now - queuedAt > PENDING_LOGIN_MAX_AGE_MS) return null;
+  return { method: methodPart === "google" ? "google" : "email" };
+}
+
 export function flushLoginEvent() {
   if (typeof window === "undefined") return;
-  const queuedAt = Number(readStorage("session", PENDING_LOGIN_KEY));
-  if (!queuedAt) return;
+  const raw = readStorage("session", PENDING_LOGIN_KEY);
+  if (!raw) return;
   writeStorage("session", PENDING_LOGIN_KEY, null);
-  if (Date.now() - queuedAt > 5 * 60 * 1000) return;
-  track("login", { method: "email" });
+  const pending = parsePendingLogin(raw);
+  if (pending) track("login", { method: pending.method });
 }
 
 /** Deal type as the business reads it: a Direktkauf with an enabled takeover offer is a Leasingübernahme. */
