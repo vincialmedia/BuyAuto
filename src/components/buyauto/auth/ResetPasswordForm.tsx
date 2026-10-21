@@ -44,7 +44,7 @@ export default function ResetPasswordForm({
                 <Input
                   {...field}
                   type="email"
-                  placeholder="ihre@email.com"
+                  placeholder="name@beispiel.ch"
                   className="h-11 border-neutral-300 focus:border-red-500 focus:ring-red-500/20"
                   disabled={isLoading}
                 />

@@ -18,6 +18,8 @@ interface RegisterFormProps {
   onShowLogin: () => void;
   isLoading: boolean;
   initialAccountType?: "private" | "garage";
+  /** Shown under the account type while «Privatkunde» is selected (the Google button). */
+  privateAccountExtra?: React.ReactNode;
 }
 
 export default function RegisterForm({
@@ -25,6 +27,7 @@ export default function RegisterForm({
   onShowLogin,
   isLoading,
   initialAccountType,
+  privateAccountExtra,
 }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -187,6 +190,9 @@ export default function RegisterForm({
           )}
         />
 
+        {/* Garages need the form: garage name and town aren't part of a Google account. */}
+        {selectedAccountType === "private" ? privateAccountExtra : null}
+
         <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
@@ -308,7 +314,7 @@ export default function RegisterForm({
                     />
                   </FormControl>
                   <p className="text-xs text-neutral-500">
-                    An diese Adresse werden Kaufanfragen gesendet – unabhängig von Ihrer Login-E-Mail.
+                    An diese Adresse werden Kaufanfragen gesendet – unabhängig von deiner Login-E-Mail.
                   </p>
                   <FormMessage className="text-red-500 text-sm" />
                 </FormItem>

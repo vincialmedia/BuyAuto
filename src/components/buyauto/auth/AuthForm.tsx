@@ -12,6 +12,8 @@ import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ResetPasswordForm from "./ResetPasswordForm";
 import UpdatePasswordForm from "./UpdatePasswordForm";
+import GoogleSignInButton from "./GoogleSignInButton";
+import { canOfferGoogleSignIn } from "@/lib/buyauto/googleSignIn";
 import authService from "@/services/authService";
 import type { LoginFormData, RegisterFormData } from "@/lib/buyauto/schemas";
 
@@ -30,6 +32,9 @@ export default function AuthForm({
   returnPath,
 }: AuthFormProps = {}) {
   const [currentView, setCurrentView] = useState<AuthView>(initialView);
+  // Opened for a garage (?type=garage): a Google sign-up would create a private
+  // account, so the login tab leaves Google out there.
+  const offerGoogleOnLogin = initialAccountType !== "garage";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,12 +63,15 @@ export default function AuthForm({
       
     } catch (error: any) {
       console.error("Login error:", error);
-      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      let errorMessage = "Etwas ist schiefgelaufen. Bitte versuch es nochmals.";
       
       if (error?.message?.includes("Invalid login credentials")) {
-        errorMessage = "Ungültige E-Mail oder Passwort.";
+        // An account created with Google has no password until one is set.
+        errorMessage = offerGoogleOnLogin && canOfferGoogleSignIn()
+          ? "E-Mail oder Passwort ist falsch. Hast du dein Konto mit Google erstellt? Dann melde dich mit Google an."
+          : "E-Mail oder Passwort ist falsch.";
       } else if (error?.message?.includes("Email not confirmed")) {
-        errorMessage = "Bitte bestätigen Sie Ihre E-Mail-Adresse.";
+        errorMessage = "Bitte bestätige zuerst deine E-Mail-Adresse. Den Link findest du in unserer E-Mail.";
       } else if (error?.message) {
         errorMessage = error.message;
       }
@@ -116,7 +124,7 @@ export default function AuthForm({
       }
       console.log("AuthForm: Registration successful");
       
-      toast.success("Registrierung erfolgreich! Überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.");
+      toast.success("Konto erstellt! Bestätige jetzt deine E-Mail-Adresse: Den Link haben wir dir geschickt.");
       setCurrentView("login");
       
     } catch (error: any) {
@@ -128,7 +136,7 @@ export default function AuthForm({
         error?.message?.includes("already been registered");
 
       if (emailAlreadyExists) {
-        const errorMessage = "Diese E-Mail existiert bereits, bitte loggen Sie sich ein.";
+        const errorMessage = "Mit dieser E-Mail gibt es schon ein Konto. Bitte melde dich an.";
         toast.error(errorMessage);
         setError(errorMessage);
         // Flip the toggle over to the login ("Einloggen") view so the user can
@@ -137,7 +145,7 @@ export default function AuthForm({
         return;
       }
 
-      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      let errorMessage = "Etwas ist schiefgelaufen. Bitte versuch es nochmals.";
       if (error?.message) {
         errorMessage = error.message;
       }
@@ -149,6 +157,21 @@ export default function AuthForm({
     }
   };
 
+  // Google signs in on the spot (no confirmation e-mail); the auth page then
+  // forwards to ?redirect= or the dashboard like after a password login.
+  const handleGoogleSignedIn = ({ isNewAccount }: { isNewAccount: boolean }) => {
+    toast.success(isNewAccount ? "Willkommen bei BuyAuto!" : "Erfolgreich angemeldet!");
+  };
+
+  const googleButton = (
+    <GoogleSignInButton
+      divider="below"
+      showTerms
+      disabled={isLoading}
+      onSignedIn={handleGoogleSignedIn}
+    />
+  );
+
   const handleResetPassword = async (email: string) => {
     try {
       setIsLoading(true);
@@ -157,12 +180,12 @@ export default function AuthForm({
       await authService.resetPassword(email);
       console.log("AuthForm: Password reset email sent");
       
-      toast.success("Passwort-Reset-Link wurde an Ihre E-Mail-Adresse gesendet.");
+      toast.success("Falls es zu dieser Adresse ein Konto gibt, haben wir dir einen Link zum Zurücksetzen geschickt.");
       setCurrentView("login");
       
     } catch (error: any) {
       console.error("Reset password error:", error);
-      const errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      const errorMessage = "Etwas ist schiefgelaufen. Bitte versuch es nochmals.";
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
@@ -191,7 +214,7 @@ export default function AuthForm({
       
     } catch (error: any) {
       console.error("Update password error:", error);
-      let errorMessage = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
+      let errorMessage = "Etwas ist schiefgelaufen. Bitte versuch es nochmals.";
       if (error?.message) {
         errorMessage = error.message;
       }
@@ -208,7 +231,7 @@ export default function AuthForm({
         <CardHeader className="space-y-1 text-center pb-4">
           <h1 className="text-2xl font-semibold text-neutral-900">Passwort zurücksetzen</h1>
           <p className="text-sm text-neutral-600">
-            Geben Sie Ihre E-Mail-Adresse ein, um ein neues Passwort zu erhalten.
+            Gib deine E-Mail-Adresse ein, dann schicken wir dir einen Link für ein neues Passwort.
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -228,7 +251,7 @@ export default function AuthForm({
         <CardHeader className="space-y-1 text-center pb-4">
           <h1 className="text-2xl font-semibold text-neutral-900">Neues Passwort</h1>
           <p className="text-sm text-neutral-600">
-            Bitte vergeben Sie ein neues, sicheres Passwort für Ihr Konto.
+            Wähle ein neues, sicheres Passwort für dein Konto.
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -284,6 +307,7 @@ export default function AuthForm({
           </TabsList>
 
           <TabsContent value="login" className="space-y-4 mt-0">
+            {offerGoogleOnLogin ? googleButton : null}
             <LoginForm
               onLogin={handleLogin}
               onShowRegister={() => setCurrentView("register")}
@@ -298,6 +322,7 @@ export default function AuthForm({
               onShowLogin={() => setCurrentView("login")}
               isLoading={isLoading}
               initialAccountType={initialAccountType}
+              privateAccountExtra={googleButton}
             />
           </TabsContent>
         </Tabs>

@@ -1060,7 +1060,6 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
 
     const meta = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
     const metaFullName = typeof meta.full_name === "string" ? meta.full_name : null;
-    const metaAvatarUrl = typeof meta.avatar_url === "string" ? meta.avatar_url : null;
 
     const seller_name = hideName
       ? null
@@ -1071,11 +1070,13 @@ export async function getUserListingById(id: string): Promise<ListingDetail | nu
             (metaFullName && metaFullName.trim() ? metaFullName : null),
         });
 
+    // Only the profile photo, like the public listing: user_metadata.avatar_url
+    // holds the Google photo of Google sign-ins, which buyers never see.
     const seller_avatar_url = hideName
       ? null
-      : (typeof profile?.avatar_url === "string" && profile.avatar_url.trim() ? profile.avatar_url : null) ??
-        (metaAvatarUrl && metaAvatarUrl.trim() ? metaAvatarUrl : null) ??
-        null;
+      : typeof profile?.avatar_url === "string" && profile.avatar_url.trim()
+        ? profile.avatar_url
+        : null;
 
     const listingDetail = transformListingsTableRowToListingDetail(data as ListingsTableRow);
 

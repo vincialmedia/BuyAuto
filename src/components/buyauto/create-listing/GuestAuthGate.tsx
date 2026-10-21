@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queueLoginEvent, setUser, track } from "@/lib/analytics";
 import authService from "@/services/authService";
+import GoogleSignInButton from "@/components/buyauto/auth/GoogleSignInButton";
+import { canOfferGoogleSignIn } from "@/lib/buyauto/googleSignIn";
 
 /**
  * Shown at the final step when a guest (not logged in) wants to publish. They
@@ -83,7 +85,9 @@ export default function GuestAuthGate() {
       const raw = String(err?.message ?? "");
       const emailAlreadyExists = err?.code === "email_exists" || /already registered|user already/i.test(raw);
       const msg = /invalid login credentials/i.test(raw)
-        ? "E-Mail oder Passwort ist falsch."
+        ? canOfferGoogleSignIn()
+          ? "E-Mail oder Passwort ist falsch. Konto mit Google erstellt? Dann melde dich oben mit Google an."
+          : "E-Mail oder Passwort ist falsch."
         : emailAlreadyExists
           ? "Diese E-Mail existiert bereits, bitte logge dich ein."
           : raw || "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
@@ -120,6 +124,21 @@ export default function GuestAuthGate() {
           </p>
         </div>
       </div>
+
+      {/* Google signs in on the spot, no confirmation e-mail: the wizard is
+          still in memory, so it carries on to publishing like after a login. */}
+      <GoogleSignInButton
+        className="mt-5"
+        divider="below"
+        showTerms
+        disabled={loading}
+        onSignedIn={({ isNewAccount }) => {
+          toast({
+            title: isNewAccount ? "Konto erstellt!" : "Willkommen zurück!",
+            description: "Dein Inserat wird jetzt veröffentlicht.",
+          });
+        }}
+      />
 
       <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-neutral-100 p-1 text-sm font-medium">
         <button
