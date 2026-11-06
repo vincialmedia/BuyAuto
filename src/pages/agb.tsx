@@ -1,8 +1,10 @@
 import Head from "next/head";
+import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 
 // Fixed revision date: legal terms carry the date they were last changed, not
 // the visitor's current date — and a static value lets the page fully SSR.
-const AGB_STAND = "6.11.2026";
+// Taken from CONTENT_LAST_UPDATED so the visible Stand and the sitemap can't drift apart.
+const AGB_STAND = formatSwissDate(CONTENT_LAST_UPDATED["/agb"]);
 
 export default function AGB() {
   return (
@@ -90,7 +92,7 @@ export default function AGB() {
             </section>
 
             {/* 5. Nutzung von Inseratsinhalten */}
-            <section id="nutzung-inseratsinhalte">
+            <section id="nutzung-inseratsinhalte" className="scroll-mt-24">
               <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center">
                 <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">5</span>
                 Nutzung von Inseratsinhalten
@@ -105,17 +107,18 @@ export default function AGB() {
                 </p>
                 <p>
                   Der Betreiber darf die Inhalte dafür bearbeiten, insbesondere zuschneiden, mit Text und Grafiken
-                  ergänzen, in andere Formate übertragen und mit anderen Inhalten kombinieren. Kontrollschilder werden
-                  unkenntlich gemacht. Name, Kontaktdaten und weitere Personendaten des Nutzers erscheinen in solchen
-                  Beiträgen nur mit seiner gesonderten Zustimmung.
+                  ergänzen, in andere Formate übertragen und mit anderen Inhalten kombinieren. In Beiträgen ausserhalb
+                  der Plattform macht der Betreiber Kontrollschilder unkenntlich. Name, Kontaktdaten und weitere
+                  Personendaten des Nutzers erscheinen in solchen Beiträgen nur mit seiner gesonderten Zustimmung.
                 </p>
                 <p>
-                  Der Betreiber darf dieses Recht an Dienstleister und Plattformen weitergeben, soweit dies für die
-                  Veröffentlichung nötig ist, etwa an Betreiber sozialer Netzwerke und Werbenetzwerke.
+                  Der Betreiber darf dieses Recht weitergeben, soweit dies für die Veröffentlichung nötig ist, etwa an
+                  Dienstleister, Anbieter sozialer Netzwerke, Werbenetzwerke und Medien.
                 </p>
                 <p>
-                  Nach dem Ende eines Inserats verwendet der Betreiber dessen Inhalte nicht mehr für neue Beiträge und
-                  beendet bezahlte Werbung dazu. Bereits veröffentlichte, unbezahlte Beiträge dürfen bestehen bleiben.
+                  Ist ein Inserat abgelaufen, pausiert, als verkauft markiert oder gelöscht, verwendet der Betreiber
+                  dessen Inhalte nicht mehr für neue Beiträge und beendet bezahlte Werbung dazu. Bereits
+                  veröffentlichte, unbezahlte Beiträge dürfen bestehen bleiben.
                 </p>
                 <p>
                   Der Nutzer sichert zu, dass er die für diese Nutzung nötigen Rechte an den von ihm hochgeladenen
@@ -124,9 +127,16 @@ export default function AGB() {
                   beruhen.
                 </p>
                 <p>
-                  Der Nutzer kann der Nutzung seiner Inseratsinhalte zur Bewerbung jederzeit per E-Mail an
-                  hello@buyauto.ch widersprechen. Der Betreiber verwendet die Inhalte danach nicht mehr für neue
-                  Beiträge und entfernt bestehende Beiträge in seinen eigenen Kanälen innert angemessener Frist.
+                  Der Nutzer kann der Nutzung seiner Inseratsinhalte zur Bewerbung jederzeit per E-Mail an{" "}
+                  <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a>{" "}
+                  widersprechen. Der Betreiber verwendet die Inhalte danach nicht mehr für neue Beiträge, beendet
+                  bezahlte Werbung dazu und entfernt bestehende Beiträge in seinen eigenen Kanälen innert angemessener
+                  Frist.
+                </p>
+                <p>
+                  Diese Ziffer gilt für Inserate, die ab dem {AGB_STAND} veröffentlicht werden. Für Inserate, die
+                  vorher veröffentlicht wurden, gilt sie 30 Tage nachdem der Betreiber den Nutzer per E-Mail darüber
+                  informiert hat, sofern der Nutzer nicht widerspricht.
                 </p>
               </div>
             </section>
@@ -193,8 +203,8 @@ export default function AGB() {
                 <p>
                   Der Betreiber kann diese AGB ändern. Änderungen werden den Nutzern mindestens 30 Tage vor ihrem
                   Inkrafttreten per E-Mail oder auf der Plattform mitgeteilt. Widerspricht ein Nutzer nicht innert
-                  dieser Frist, gelten die geänderten AGB auch für seine bestehenden Inserate. Widerspricht er, kann er
-                  sein Inserat jederzeit beenden.
+                  dieser Frist, gelten die geänderten AGB auch für seine bestehenden Inserate. Widerspricht er, gelten
+                  für seine bestehenden Inserate weiterhin die bisherigen AGB.
                 </p>
                 <p>
                   Es gilt Schweizer Recht. Gerichtsstand ist Zürich.
