@@ -2,7 +2,7 @@ import Head from "next/head";
 
 // Fixed revision date: legal terms carry the date they were last changed, not
 // the visitor's current date — and a static value lets the page fully SSR.
-const AGB_STAND = "26.11.2025";
+const AGB_STAND = "6.11.2026";
 
 export default function AGB() {
   return (
@@ -89,10 +89,52 @@ export default function AGB() {
               </div>
             </section>
 
-            {/* 5. Gebühren und Zahlungen */}
-            <section>
+            {/* 5. Nutzung von Inseratsinhalten */}
+            <section id="nutzung-inseratsinhalte">
               <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center">
                 <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">5</span>
+                Nutzung von Inseratsinhalten
+              </h2>
+              <div className="text-neutral-600 space-y-4 leading-relaxed pl-11">
+                <p>
+                  Mit der Veröffentlichung eines Inserats räumt der Nutzer dem Betreiber das unentgeltliche, nicht
+                  ausschliessliche und räumlich unbeschränkte Recht ein, die Inhalte des Inserats, insbesondere Fotos,
+                  Fahrzeugdaten, Monatsrate, Restlaufzeit und weitere Konditionen, auf der Plattform und zur Bewerbung
+                  der Plattform und des Inserats zu nutzen. Dazu gehören unter anderem Beiträge in sozialen Medien,
+                  bezahlte Werbung bei Online-Werbediensten, Newsletter, Presse- und Medienarbeit sowie Präsentationen.
+                </p>
+                <p>
+                  Der Betreiber darf die Inhalte dafür bearbeiten, insbesondere zuschneiden, mit Text und Grafiken
+                  ergänzen, in andere Formate übertragen und mit anderen Inhalten kombinieren. Kontrollschilder werden
+                  unkenntlich gemacht. Name, Kontaktdaten und weitere Personendaten des Nutzers erscheinen in solchen
+                  Beiträgen nur mit seiner gesonderten Zustimmung.
+                </p>
+                <p>
+                  Der Betreiber darf dieses Recht an Dienstleister und Plattformen weitergeben, soweit dies für die
+                  Veröffentlichung nötig ist, etwa an Betreiber sozialer Netzwerke und Werbenetzwerke.
+                </p>
+                <p>
+                  Nach dem Ende eines Inserats verwendet der Betreiber dessen Inhalte nicht mehr für neue Beiträge und
+                  beendet bezahlte Werbung dazu. Bereits veröffentlichte, unbezahlte Beiträge dürfen bestehen bleiben.
+                </p>
+                <p>
+                  Der Nutzer sichert zu, dass er die für diese Nutzung nötigen Rechte an den von ihm hochgeladenen
+                  Inhalten besitzt, auch an Fotos, die nicht von ihm selbst stammen (zum Beispiel Fotos eines Händlers).
+                  Er stellt den Betreiber von Ansprüchen Dritter frei, die auf einer Verletzung dieser Zusicherung
+                  beruhen.
+                </p>
+                <p>
+                  Der Nutzer kann der Nutzung seiner Inseratsinhalte zur Bewerbung jederzeit per E-Mail an
+                  hello@buyauto.ch widersprechen. Der Betreiber verwendet die Inhalte danach nicht mehr für neue
+                  Beiträge und entfernt bestehende Beiträge in seinen eigenen Kanälen innert angemessener Frist.
+                </p>
+              </div>
+            </section>
+
+            {/* 6. Gebühren und Zahlungen */}
+            <section>
+              <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center">
+                <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">6</span>
                 Gebühren und Zahlungen
               </h2>
               <div className="text-neutral-600 space-y-4 leading-relaxed pl-11">
@@ -125,10 +167,10 @@ export default function AGB() {
               </div>
             </section>
 
-             {/* 6. Haftung */}
+             {/* 7. Haftung */}
             <section>
               <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center">
-                <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">6</span>
+                <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">7</span>
                 Haftung
               </h2>
               <div className="text-neutral-600 space-y-4 leading-relaxed pl-11">
@@ -141,13 +183,19 @@ export default function AGB() {
               </div>
             </section>
 
-             {/* 7. Schlussbestimmungen */}
+             {/* 8. Schlussbestimmungen */}
             <section>
               <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center">
-                <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">7</span>
+                <span className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm">8</span>
                 Schlussbestimmungen
               </h2>
               <div className="text-neutral-600 space-y-4 leading-relaxed pl-11">
+                <p>
+                  Der Betreiber kann diese AGB ändern. Änderungen werden den Nutzern mindestens 30 Tage vor ihrem
+                  Inkrafttreten per E-Mail oder auf der Plattform mitgeteilt. Widerspricht ein Nutzer nicht innert
+                  dieser Frist, gelten die geänderten AGB auch für seine bestehenden Inserate. Widerspricht er, kann er
+                  sein Inserat jederzeit beenden.
+                </p>
                 <p>
                   Es gilt Schweizer Recht. Gerichtsstand ist Zürich.
                 </p>

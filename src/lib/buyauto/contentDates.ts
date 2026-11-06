@@ -15,7 +15,7 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/leasing-abgeben-schweiz": "2026-10-16",
   "/fuer-garagen": "2026-08-13",
   "/datenschutz": "2026-10-21",
-  "/agb": "2026-07-30",
+  "/agb": "2026-11-06",
 };
 
 /**
