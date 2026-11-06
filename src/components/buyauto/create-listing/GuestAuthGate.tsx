@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { LockKeyhole, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -237,6 +238,20 @@ export default function GuestAuthGate() {
             "Konto erstellen & veröffentlichen"
           )}
         </Button>
+
+        {mode === "register" && (
+          <p className="text-center text-xs leading-relaxed text-neutral-500">
+            Mit der Registrierung akzeptierst du die{" "}
+            <Link href="/agb" className="underline underline-offset-2 hover:text-neutral-700">
+              AGB
+            </Link>
+            . Wie wir deine Daten bearbeiten, steht in der{" "}
+            <Link href="/datenschutz" className="underline underline-offset-2 hover:text-neutral-700">
+              Datenschutzerklärung
+            </Link>
+            .
+          </p>
+        )}
       </form>
     </div>
   );

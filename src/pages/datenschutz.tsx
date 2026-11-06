@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Link from "next/link";
 import { CONTENT_LAST_UPDATED, formatSwissDate } from "@/lib/buyauto/contentDates";
 
 // Fixed revision date (see agb.tsx): a privacy policy carries the date it was
@@ -95,6 +96,25 @@ export default function Datenschutz() {
                   Datenschutzerklärung von Google
                 </a>
                 .
+              </p>
+
+              <h3 id="inserate-social-media-werbung" className="text-lg font-medium mb-2 scroll-mt-24">Inserate in sozialen Medien und Werbung</h3>
+              <p className="mb-4">
+                Wir bewerben veröffentlichte Inserate und unsere Plattform auch ausserhalb von buyauto.ch. Dafür können wir Inhalte aus Ihrem veröffentlichten Inserat verwenden: Fotos, Fahrzeugdaten und Konditionen wie Monatsrate und Restlaufzeit. Diese Inhalte können in Beiträgen in sozialen Netzwerken (zum Beispiel Instagram und Facebook, beide betrieben von Meta), in bezahlter Werbung bei Werbenetzwerken (zum Beispiel Google und Meta), in Newslettern sowie in der Presse- und Medienarbeit erscheinen. Die Anbieter dieser Netzwerke und die Medien erhalten dabei die Inhalte, die im jeweiligen Beitrag oder in der jeweiligen Anzeige erscheinen.
+              </p>
+              <p className="mb-4">
+                Kontrollschilder machen wir in Beiträgen ausserhalb der Plattform unkenntlich. Ihren Namen, Ihre Kontaktdaten und weitere Personendaten verwenden wir dafür nur, wenn Sie dem gesondert zugestimmt haben.
+              </p>
+              <p className="mb-4">
+                Zweck ist, Interessenten auf Ihr Inserat und auf BuyAuto aufmerksam zu machen. Rechtsgrundlage ist die Durchführung des Nutzungsvertrags, in dem Sie uns mit der Veröffentlichung des Inserats das Recht zu dieser Nutzung einräumen (
+                <Link href="/agb#nutzung-inseratsinhalte" className="text-red-600 hover:underline">Ziff. 5 der AGB</Link>
+                ; Art. 6 Abs. 1 lit. b DSGVO bzw. Art. 31 Abs. 2 lit. a DSG), sowie unser berechtigtes Interesse, die Inserate auf unserer Plattform zu bewerben (Art. 6 Abs. 1 lit. f DSGVO bzw. Art. 31 Abs. 1 DSG).
+              </p>
+              <p className="mb-4">
+                Sie können dieser Nutzung jederzeit per E-Mail an <a href="mailto:hello@buyauto.ch" className="text-red-600 hover:underline">hello@buyauto.ch</a> widersprechen. Danach verwenden wir Ihr Inserat nicht mehr für neue Beiträge, beenden bezahlte Werbung dazu und entfernen bestehende Beiträge in unseren eigenen Kanälen innert angemessener Frist.
+              </p>
+              <p className="mb-4">
+                Ist Ihr Inserat abgelaufen, pausiert, als verkauft markiert oder gelöscht, verwenden wir es ebenfalls nicht mehr für neue Beiträge und beenden bezahlte Werbung dazu. Bereits veröffentlichte, unbezahlte Beiträge können in diesem Fall bestehen bleiben.
               </p>
 
               <h3 id="eintauschwert-rechner" className="text-lg font-medium mb-2 scroll-mt-24">Beim Eintauschwert-Rechner</h3>
@@ -210,6 +230,16 @@ export default function Datenschutz() {
                     Anmeldung mit Google
                   </a>
                   ) sowie für Google Analytics und Google Ads (siehe Abschnitt 4).
+                </li>
+                <li>
+                  <strong>Soziale Netzwerke, Werbenetzwerke und Medien:</strong> Für die Bewerbung veröffentlichter
+                  Inserate, zum Beispiel auf Instagram und Facebook (Meta), in Anzeigen bei Google und Meta sowie in
+                  der Presse- und Medienarbeit. Übermittelt werden die Inhalte aus dem Inserat, die im jeweiligen
+                  Beitrag oder in der jeweiligen Anzeige erscheinen (siehe{" "}
+                  <a href="#inserate-social-media-werbung" className="text-red-600 hover:underline">
+                    Inserate in sozialen Medien und Werbung
+                  </a>
+                  ).
                 </li>
               </ul>
             </section>

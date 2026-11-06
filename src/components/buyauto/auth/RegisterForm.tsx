@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, User, Building2 } from "lucide-react";
@@ -409,6 +410,18 @@ export default function RegisterForm({
             "Konto erstellen"
           )}
         </Button>
+
+        <p className="text-center text-xs leading-relaxed text-neutral-500">
+          Mit der Registrierung akzeptierst du die{" "}
+          <Link href="/agb" className="underline underline-offset-2 hover:text-neutral-700">
+            AGB
+          </Link>
+          . Wie wir deine Daten bearbeiten, steht in der{" "}
+          <Link href="/datenschutz" className="underline underline-offset-2 hover:text-neutral-700">
+            Datenschutzerklärung
+          </Link>
+          .
+        </p>
 
         <p className="text-center text-sm text-neutral-600">
           Schon registriert?{" "}

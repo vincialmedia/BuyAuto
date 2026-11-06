@@ -14,7 +14,7 @@ export const CONTENT_LAST_UPDATED: Record<string, string> = {
   "/eintauschwert-rechner": "2026-10-21",
   "/leasing-abgeben-schweiz": "2026-10-16",
   "/fuer-garagen": "2026-08-13",
-  "/datenschutz": "2026-10-21",
+  "/datenschutz": "2026-11-06",
   "/agb": "2026-11-06",
 };
 
