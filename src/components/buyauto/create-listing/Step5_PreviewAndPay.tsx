@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useWizard } from "./ListingWizard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,6 +55,24 @@ const PaymentWidget = dynamic(
     )
   }
 );
+
+/** AGB notice next to every button that publishes a listing (free, paid and garage). */
+function PublishTermsNote({ className = "" }: { className?: string }) {
+  return (
+    <p className={`text-xs leading-relaxed text-neutral-500 ${className}`}>
+      Mit dem Veröffentlichen akzeptierst du die{" "}
+      <Link href="/agb" className="underline underline-offset-2 hover:text-neutral-700">
+        AGB
+      </Link>
+      . BuyAuto darf dein Inserat auch auf Social Media und in Werbung zeigen, ohne deinen Namen und mit
+      verwischtem Kontrollschild (
+      <Link href="/agb#nutzung-inseratsinhalte" className="underline underline-offset-2 hover:text-neutral-700">
+        AGB Ziff. 5
+      </Link>
+      ).
+    </p>
+  );
+}
 
 const formatPrice = (price: unknown) => {
   const n = getNumber(price);
@@ -1552,6 +1571,7 @@ export default function Step5_PreviewAndPay() {
                     </>
                   )}
                 </Button>
+                <PublishTermsNote className="text-center sm:max-w-sm sm:text-right" />
               </div>
             ) : isEditingCompleted && !planChanged ? (
               <Button
@@ -1572,25 +1592,29 @@ export default function Step5_PreviewAndPay() {
                 )}
               </Button>
             ) : (
-              <Button
-                onClick={handlePreparePayment}
-                disabled={isPreparingPayment}
-                className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 w-full sm:w-auto sm:min-w-[200px]"
-              >
-                {isPreparingPayment ? (
-                  <>
-                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Wird geladen...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    {isEditingCompleted && planChanged
-                      ? `Planwechsel bezahlen (CHF ${total.toFixed(2)})`
-                      : total === 0 ? 'Kostenlos Inserieren' : `Jetzt bezahlen (CHF ${total.toFixed(2)})`}
-                  </>
-                )}
-              </Button>
+              <div className="flex flex-col items-stretch sm:items-end gap-3">
+                <Button
+                  onClick={handlePreparePayment}
+                  disabled={isPreparingPayment}
+                  className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 w-full sm:w-auto sm:min-w-[200px]"
+                >
+                  {isPreparingPayment ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Wird geladen...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      {isEditingCompleted && planChanged
+                        ? `Planwechsel bezahlen (CHF ${total.toFixed(2)})`
+                        : total === 0 ? 'Kostenlos Inserieren' : `Jetzt bezahlen (CHF ${total.toFixed(2)})`}
+                    </>
+                  )}
+                </Button>
+                {/* A plan change on an already published listing publishes nothing. */}
+                {!isEditingCompleted && <PublishTermsNote className="text-center sm:max-w-sm sm:text-right" />}
+              </div>
             )}
           </div>
         </>
@@ -1603,6 +1627,9 @@ export default function Step5_PreviewAndPay() {
               totalAmount={total}
               onSuccess={handlePaymentSuccess}
             />
+          )}
+          {clientSecret && !isEditingCompleted && (
+            <PublishTermsNote className="!mt-3 mx-auto max-w-md text-center" />
           )}
         </>
       )}
