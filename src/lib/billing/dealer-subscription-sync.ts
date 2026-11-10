@@ -131,6 +131,46 @@ export function hasLiveStripeSubscription(row: TrackedSubscription | null | unde
   return !row.ended_at && row.status !== "canceled";
 }
 
+/**
+ * What a Stripe subscription status means when the garage wants to check out
+ * (again):
+ *
+ *  - "running": trialing, active or paused. The garage has a plan; a second
+ *    checkout would bill it twice.
+ *  - "overdue": past_due or unpaid. Stripe is still collecting the last
+ *    invoice; a second checkout would add a second bill on top.
+ *  - null: ended, or never started (incomplete). Nothing in the way. An
+ *    incomplete subscription must not block: it is what a declined first
+ *    attempt can leave behind for up to a day.
+ */
+export type CheckoutBlock = "running" | "overdue" | null;
+
+export function checkoutBlockForStatus(status: string): CheckoutBlock {
+  if (status === "trialing" || status === "active" || status === "paused") return "running";
+  if (status === "past_due" || status === "unpaid") return "overdue";
+  return null;
+}
+
+/**
+ * Sums up the Stripe subscriptions known for one garage: whether one of them
+ * stands in the way of a new checkout, and whether the garage ever had a
+ * subscription that started (which decides if a free period is still due).
+ */
+export function summarizeKnownSubscriptions(statuses: string[]): {
+  block: CheckoutBlock;
+  hadSubscriptionBefore: boolean;
+} {
+  let block: CheckoutBlock = null;
+  let hadSubscriptionBefore = false;
+  for (const status of statuses) {
+    const own = checkoutBlockForStatus(status);
+    if (own === "running") block = "running";
+    else if (own === "overdue" && block === null) block = "overdue";
+    if (status !== "incomplete" && status !== "incomplete_expired") hadSubscriptionBefore = true;
+  }
+  return { block, hadSubscriptionBefore };
+}
+
 /** Reads the subscription id from an invoice (top level up to API 2025-02-24, under `parent` from basil). */
 export function readInvoiceSubscriptionId(invoice: unknown): string | null {
   if (!invoice || typeof invoice !== "object") return null;
@@ -199,9 +239,14 @@ export function planDealerSubscriptionWrite(subscription: StripeSubscriptionLike
  *    event for an old subscription must not cancel the one in use
  *  - the row has no running Stripe subscription (ended, or set by hand): yes,
  *    this is a garage subscribing again
- *  - both are running: only a completed checkout takes over (the newest
- *    purchase wins). Other events of the second subscription are ignored, so
- *    two subscriptions cannot keep overwriting each other
+ *  - both are running (the checkout endpoint prevents this, so it takes a
+ *    race or a manual subscription to get here):
+ *      - one that is not in good standing never takes over
+ *      - one in good standing replaces an overdue one, so a garage that pays
+ *        is never shown as overdue
+ *      - both in good standing: only a completed checkout takes over (the
+ *        newest purchase wins). Its other events are ignored, so the two
+ *        cannot keep overwriting each other
  */
 export function shouldTrackSubscription(
   existing: TrackedSubscription | null | undefined,
@@ -212,6 +257,8 @@ export function shouldTrackSubscription(
   if (existing.stripe_subscription_id === incoming.stripe_subscription_id) return true;
   if (incoming.status === "canceled") return false;
   if (!hasLiveStripeSubscription(existing)) return true;
+  if (incoming.status !== "active") return false;
+  if (existing.status !== "active") return true;
   return fromCheckout;
 }
 

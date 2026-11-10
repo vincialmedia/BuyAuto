@@ -9,11 +9,13 @@
 import assert from "node:assert/strict";
 import {
   DEALER_GRACE_DAYS,
+  checkoutBlockForStatus,
   hasLiveStripeSubscription,
   mapStripeSubscriptionStatus,
   planDealerSubscriptionWrite,
   readInvoiceSubscriptionId,
   shouldTrackSubscription,
+  summarizeKnownSubscriptions,
   syncDealerSubscription,
   type DealerSubscriptionWrite,
   type DealerSyncDeps,
@@ -63,6 +65,29 @@ assert.equal(hasLiveStripeSubscription({ status: "past_due", stripe_subscription
 assert.equal(hasLiveStripeSubscription({ status: "pending_change", stripe_subscription_id: "sub_A" }), true);
 assert.equal(hasLiveStripeSubscription({ status: "canceled", stripe_subscription_id: "sub_A" }), false);
 assert.equal(hasLiveStripeSubscription({ status: "active", stripe_subscription_id: "sub_A", ended_at: iso(T0) }), false);
+
+// --- May the garage start another checkout? --------------------------------------
+assert.equal(checkoutBlockForStatus("trialing"), "running");
+assert.equal(checkoutBlockForStatus("active"), "running");
+assert.equal(checkoutBlockForStatus("paused"), "running");
+assert.equal(checkoutBlockForStatus("past_due"), "overdue");
+assert.equal(checkoutBlockForStatus("unpaid"), "overdue");
+assert.equal(checkoutBlockForStatus("canceled"), null);
+// A declined first attempt can leave these behind; they must not lock the garage out.
+assert.equal(checkoutBlockForStatus("incomplete"), null);
+assert.equal(checkoutBlockForStatus("incomplete_expired"), null);
+
+assert.deepEqual(summarizeKnownSubscriptions([]), { block: null, hadSubscriptionBefore: false });
+assert.deepEqual(summarizeKnownSubscriptions(["incomplete", "incomplete_expired"]), {
+  block: null,
+  hadSubscriptionBefore: false,
+});
+assert.deepEqual(summarizeKnownSubscriptions(["canceled"]), { block: null, hadSubscriptionBefore: true });
+assert.deepEqual(summarizeKnownSubscriptions(["canceled", "trialing"]), { block: "running", hadSubscriptionBefore: true });
+assert.deepEqual(summarizeKnownSubscriptions(["past_due"]), { block: "overdue", hadSubscriptionBefore: true });
+// A running one outranks an overdue one, whatever the order.
+assert.deepEqual(summarizeKnownSubscriptions(["past_due", "active"]), { block: "running", hadSubscriptionBefore: true });
+assert.deepEqual(summarizeKnownSubscriptions(["active", "unpaid"]), { block: "running", hadSubscriptionBefore: true });
 
 // --- Subscription id on an invoice ----------------------------------------------
 assert.equal(readInvoiceSubscriptionId({ subscription: "sub_A" }), "sub_A");
@@ -181,8 +206,16 @@ assert.equal(shouldTrackSubscription(liveA, incoming("sub_A", "canceled"), false
 assert.equal(shouldTrackSubscription(endedA, incoming("sub_B"), false), true); // subscribing again
 assert.equal(shouldTrackSubscription(byHand, incoming("sub_B"), false), true); // Stripe takes over a hand-made row
 assert.equal(shouldTrackSubscription(liveA, incoming("sub_B"), false), false); // second running one: ignored ...
-assert.equal(shouldTrackSubscription(liveA, incoming("sub_B", "past_due"), false), false);
 assert.equal(shouldTrackSubscription(liveA, incoming("sub_B"), true), true); // ... unless it is a completed checkout
+// One that is not in good standing never takes over, not even through its checkout event
+// (a late redelivery of an old checkout, by which time that subscription is overdue).
+assert.equal(shouldTrackSubscription(liveA, incoming("sub_B", "past_due"), false), false);
+assert.equal(shouldTrackSubscription(liveA, incoming("sub_B", "past_due"), true), false);
+assert.equal(shouldTrackSubscription(liveA, incoming("sub_B", "pending_change"), true), false);
+// One in good standing replaces an overdue one, through any of its events.
+const overdueA: TrackedSubscription = { stripe_subscription_id: "sub_A", status: "past_due", ended_at: null };
+assert.equal(shouldTrackSubscription(overdueA, incoming("sub_B"), false), true);
+assert.equal(shouldTrackSubscription(overdueA, incoming("sub_B", "past_due"), true), false);
 assert.equal(shouldTrackSubscription(liveA, incoming("sub_B", "canceled"), false), false); // an ended one never takes over
 assert.equal(shouldTrackSubscription(liveA, incoming("sub_B", "canceled"), true), false);
 assert.equal(shouldTrackSubscription(endedA, incoming("sub_B", "canceled"), false), false);
@@ -266,10 +299,13 @@ async function main() {
     assert.equal(world.rows.get(GARAGE)?.current_period_end, iso(T0 + 60 * DAY));
     assert.equal(world.rows.get(GARAGE)?.stripe_subscription_id, "sub_A");
     assert.equal(world.garagePlan.get(GARAGE), "planb");
-    // Three events, one plan change in the log.
+    // Three events: applyPlan is told the plan that was on record before each
+    // one, which is what lets the real implementation log a single change.
     assert.deepEqual(world.planChanges, [{ dealerId: GARAGE, from: null, to: "plan_planb" }]);
 
-    // 2. The trial ends and the first charge fails: past due, and no plan is (re)applied.
+    // 2. The trial ends and the first charge fails: past due, and applyPlan is
+    //    not called. (In the database a trigger still copies the plan from the
+    //    row; what an overdue garage may do is decided by dealer_has_entitlement.)
     world.stripe.set(
       "sub_A",
       subscription({ status: "past_due", current_period_start: T0 + 60 * DAY, current_period_end: T0 + 90 * DAY })
@@ -353,6 +389,29 @@ async function main() {
     assert.deepEqual(await syncDealerSubscription(deps, "sub_A"), {
       outcome: "ignored",
       reason: "ended_subscription",
+      dealerId: GARAGE,
+    });
+    assert.equal(world.rows.get(GARAGE)?.stripe_subscription_id, "sub_B");
+    assert.equal(world.rows.get(GARAGE)?.status, "active");
+  }
+
+  // 7b. Two running subscriptions where the one on record is overdue: the paid one takes
+  //     over through any event, and the overdue one cannot take the row back.
+  {
+    const world = newWorld();
+    const deps = depsFor(world);
+    world.stripe.set("sub_A", subscription({ status: "past_due" }));
+    world.stripe.set("sub_B", subscription({ id: "sub_B", customer: "cus_B" }));
+    await syncDealerSubscription(deps, "sub_A", { fromCheckout: true });
+    assert.equal(world.rows.get(GARAGE)?.status, "past_due");
+
+    assert.equal((await syncDealerSubscription(deps, "sub_B")).outcome, "applied");
+    assert.equal(world.rows.get(GARAGE)?.stripe_subscription_id, "sub_B");
+    assert.equal(world.rows.get(GARAGE)?.status, "active");
+    // A redelivered checkout event of the overdue one, days later.
+    assert.deepEqual(await syncDealerSubscription(deps, "sub_A", { fromCheckout: true }), {
+      outcome: "ignored",
+      reason: "other_subscription",
       dealerId: GARAGE,
     });
     assert.equal(world.rows.get(GARAGE)?.stripe_subscription_id, "sub_B");

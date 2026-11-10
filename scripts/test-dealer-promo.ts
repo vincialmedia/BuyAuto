@@ -57,7 +57,7 @@ assert.equal(readTrialDays({ trial_days: "1" }), 1);
 assert.equal(readTrialDays({ trial_days: String(MAX_PROMO_TRIAL_DAYS) }), MAX_PROMO_TRIAL_DAYS);
 assert.equal(readTrialDays({ trial_days: String(MAX_PROMO_TRIAL_DAYS + 1) }), "invalid");
 assert.equal(readTrialDays({ trial_days: "30 Tage" }), "invalid");
-assert.equal(readTrialDays({ trial_days: "3 Monate" }), "invalid");
+assert.equal(readTrialDays({ trial_days: "sechs Wochen" }), "invalid");
 assert.equal(readTrialDays({ trial_days: "-5" }), "invalid");
 assert.equal(readTrialDays({ trial_days: "1.5" }), "invalid");
 assert.equal(readTrialDays({ trial_days: "3e1" }), "invalid");
@@ -158,7 +158,7 @@ assert.deepEqual(evaluatePromotionCode(promo({ metadata: { campaign: "x" } }, { 
 });
 
 // Unreadable trial metadata refuses the code: never silently charge a garage that was promised a free period.
-assert.deepEqual(evaluatePromotionCode(promo({}, { metadata: { trial_days: "3 Monate" } }), PLAN_A), {
+assert.deepEqual(evaluatePromotionCode(promo({}, { metadata: { trial_days: "sechs Wochen" } }), PLAN_A), {
   ok: false,
   reason: "misconfigured",
 });

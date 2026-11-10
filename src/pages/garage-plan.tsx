@@ -43,6 +43,11 @@ export default function GaragePlanPage() {
       return;
     }
 
+    // No profile means it could not be loaded, so the role is unknown. Saying
+    // «nur für Garagen» to a garage with a network hiccup would be wrong; the
+    // plan buttons stay disabled (authReady) until a reload.
+    if (!profile) return;
+
     if (userRole !== "garage") {
       toast.error("Zugriff verweigert", {
         description: "Diese Seite ist nur für Garagen verfügbar.",
@@ -55,6 +60,12 @@ export default function GaragePlanPage() {
     // them the effect never ran again and the page sat there with disabled
     // buttons instead of sending the visitor to the login.
   }, [user, userRole, router, profile, authLoading, profileLoading]);
+
+  // Put the cursor back into the code field when a code was refused. This
+  // waits for `loading` to end, because a disabled input cannot take focus.
+  useEffect(() => {
+    if (promoError && !loading) document.getElementById("promo-code")?.focus();
+  }, [promoError, loading]);
 
   // The browser's Back button from Stripe restores this page from the
   // back/forward cache, buttons still in their loading state.
@@ -88,6 +99,8 @@ export default function GaragePlanPage() {
 
     // A problem with the code is shown at the code field, not as a toast.
     let codeProblem = false;
+    // "You already have a plan" is an answer, not a failure.
+    let note: string | null = null;
 
     try {
       const response = await fetch("/api/dealer/prepare", {
@@ -109,6 +122,8 @@ export default function GaragePlanPage() {
           codeProblem = true;
           setPromoError(message);
         }
+        if (payload?.code === "already_subscribed") note = "Dein Paket läuft bereits";
+        if (payload?.code === "payment_overdue") note = "Zahlung offen";
         throw new Error(message);
       }
 
@@ -121,9 +136,9 @@ export default function GaragePlanPage() {
       window.location.href = url;
     } catch (error: any) {
       console.error("Plan selection error:", error);
-      if (codeProblem) {
-        document.getElementById("promo-code")?.focus();
-      } else {
+      if (note) {
+        toast.info(note, { description: error.message, duration: 12000 });
+      } else if (!codeProblem) {
         toast.error("Fehler", {
           description: error.message || "Bitte versuche es später erneut.",
         });
@@ -138,6 +153,8 @@ export default function GaragePlanPage() {
   // until we know a garage user is signed in. Logged-out / non-garage visitors
   // are redirected by the effect above.
   const authReady = Boolean(user && userRole === "garage");
+  // Signed in, but the profile (and with it the role) could not be loaded.
+  const profileMissing = Boolean(user && !profile && !authLoading && !profileLoading);
 
   return (
     <>
@@ -195,6 +212,12 @@ export default function GaragePlanPage() {
               Zahlungsseite, bevor du bestätigst.
             </p>
           </div>
+
+          {profileMissing && (
+            <p role="alert" className="mx-auto max-w-md text-center text-sm text-red-600">
+              Dein Konto konnte nicht geladen werden. Bitte lade die Seite neu.
+            </p>
+          )}
 
           <GaragePlanCards
             onSelect={(code) => void handleSelectPlan(code)}

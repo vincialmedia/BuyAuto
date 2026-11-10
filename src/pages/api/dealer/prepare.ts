@@ -9,7 +9,11 @@ import {
   normalizePromoCode,
   type PromotionCodeLike,
 } from "@/lib/billing/dealer-promo";
-import { hasLiveStripeSubscription, type TrackedSubscription } from "@/lib/billing/dealer-subscription-sync";
+import {
+  hasLiveStripeSubscription,
+  summarizeKnownSubscriptions,
+  type TrackedSubscription,
+} from "@/lib/billing/dealer-subscription-sync";
 import { resolveSameOriginUrl } from "@/lib/safe-next-path";
 
 type PrepareBody = {
@@ -27,6 +31,8 @@ const MESSAGES = {
   planUnavailable: "Dieses Paket lässt sich gerade nicht buchen. Bitte melde dich bei uns: hello@buyauto.ch",
   alreadySubscribed:
     "Für deine Garage läuft bereits ein Paket. Für einen Wechsel oder eine Kündigung melde dich bei uns: hello@buyauto.ch",
+  paymentOverdue:
+    "Die letzte Zahlung für dein Paket ist fehlgeschlagen. Melde dich bei uns, dann bringen wir das in Ordnung: hello@buyauto.ch",
   generic: "Die Zahlung konnte nicht vorbereitet werden. Bitte versuche es in ein paar Minuten nochmals.",
 } as const;
 
@@ -51,6 +57,49 @@ function isMonthlyRecurringStripePrice(price: Awaited<ReturnType<typeof stripe.p
   const interval = typeof recurring.interval === "string" ? recurring.interval : null;
   const usageType = typeof recurring.usage_type === "string" ? recurring.usage_type : null;
   return interval === "month" && usageType === "licensed";
+}
+
+/**
+ * Stripe's current status of the subscription on record, or `null` when
+ * Stripe does not know it. Asked before a garage is turned away: the row in
+ * `dealer_subscriptions` is written by the webhook, and a row that missed its
+ * "cancelled" event must not lock the garage out. Throws when Stripe cannot
+ * be asked; then no checkout is started either.
+ */
+async function retrieveStripeSubscriptionStatus(subscriptionId: string): Promise<string | null> {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    return subscription.status;
+  } catch (error: unknown) {
+    if ((error as { code?: unknown } | null)?.code === "resource_missing") return null;
+    throw error;
+  }
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The statuses of every subscription Stripe has for this garage, found by the
+ * metadata this endpoint puts on them. This is the answer that does not
+ * depend on our webhook: while events are not arriving there is no row, and a
+ * garage that sees no plan after paying tries again.
+ *
+ * Stripe's search lags behind by up to about a minute, which is why the row
+ * is looked at first. A failed search is logged and treated as "nothing
+ * found": the row check above still stands.
+ */
+async function searchStripeSubscriptionStatuses(dealerId: string): Promise<string[]> {
+  if (!UUID_PATTERN.test(dealerId)) return [];
+  try {
+    const result = await stripe.subscriptions.search({
+      query: `metadata['dealer_id']:'${dealerId}' AND metadata['kind']:'dealer_plan'`,
+      limit: 20,
+    });
+    return result.data.map((subscription) => subscription.status);
+  } catch (error: unknown) {
+    console.error("Dealer subscription prepare: Stripe subscription search failed", error);
+    return [];
+  }
 }
 
 function promoError(res: NextApiResponse, reason: keyof typeof PROMO_ERROR_MESSAGES) {
@@ -114,6 +163,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // checkouts of the same garage, so a second one would bill it twice and,
     // with a code, start another free period. Plan changes and cancellations
     // go through support until there is a self-service flow for them.
+    //
+    // Two sources, in this order: the row our webhook keeps (current within
+    // seconds, confirmed with Stripe before anyone is turned away), then
+    // Stripe's own search (still right when the webhook is not delivering).
     const { data: currentSubscription, error: currentSubscriptionError } = await supabase
       .from("dealer_subscriptions")
       .select("plan_id, status, stripe_subscription_id, ended_at")
@@ -125,9 +178,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ ok: false, error: MESSAGES.generic });
     }
 
+    const knownStatuses: string[] = [];
     if (hasLiveStripeSubscription(currentSubscription)) {
-      return res.status(409).json({ ok: false, error: MESSAGES.alreadySubscribed });
+      const status = await retrieveStripeSubscriptionStatus(currentSubscription.stripe_subscription_id);
+      if (status) knownStatuses.push(status);
     }
+    if (!summarizeKnownSubscriptions(knownStatuses).block) {
+      knownStatuses.push(...(await searchStripeSubscriptionStatuses(garage.id)));
+    }
+    const known = summarizeKnownSubscriptions(knownStatuses);
+
+    if (known.block) {
+      // `code` lets the page show this as a note instead of an error.
+      return res.status(409).json({
+        ok: false,
+        error: known.block === "overdue" ? MESSAGES.paymentOverdue : MESSAGES.alreadySubscribed,
+        code: known.block === "overdue" ? "payment_overdue" : "already_subscribed",
+      });
+    }
+
+    const hadSubscriptionBefore = known.hadSubscriptionBefore || Boolean(currentSubscription?.stripe_subscription_id);
 
     const stripePrice = await stripe.prices.retrieve(plan.stripe_price_id);
     if (!isMonthlyRecurringStripePrice(stripePrice)) {
@@ -174,8 +244,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // A free period is for a garage's first subscription only. A garage
       // that had one before (it has ended, or the check above would have
-      // stopped it) keeps the discount and starts paying right away.
-      if (trialDays && currentSubscription?.stripe_subscription_id) trialDays = null;
+      // stopped the request) keeps the discount and starts paying right away.
+      // Stripe Checkout shows the terms that apply before the garage confirms.
+      if (trialDays && hadSubscriptionBefore) trialDays = null;
     }
 
     const forwardedProto = String(req.headers["x-forwarded-proto"] ?? "").split(",")[0].trim();
