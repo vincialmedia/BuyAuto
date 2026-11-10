@@ -7,7 +7,33 @@ type PrepareBody = {
   plan_code?: string;
   success_path?: string;
   cancel_path?: string;
+  /** Optional promotion code typed on /garage-plan (e.g. for founding partners). */
+  promo_code?: string;
 };
+
+/**
+ * Promotion codes are configured in Stripe only — amount, duration, which
+ * product they apply to and an optional free trial — so offers never live in
+ * this public repo. The trial comes from `trial_days` metadata on the
+ * promotion code (or its coupon); Stripe coupons can't express a trial.
+ */
+const PROMO_CODE_PATTERN = /^[A-Z0-9_-]{3,40}$/;
+const MAX_PROMO_TRIAL_DAYS = 365;
+
+function normalizePromoCode(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const code = input.trim().toUpperCase();
+  return code.length > 0 ? code : null;
+}
+
+function parseTrialDays(...candidates: Array<string | undefined>): number | null {
+  for (const raw of candidates) {
+    if (typeof raw !== "string" || raw.trim() === "") continue;
+    const days = Number.parseInt(raw.trim(), 10);
+    if (Number.isInteger(days) && days > 0 && days <= MAX_PROMO_TRIAL_DAYS) return days;
+  }
+  return null;
+}
 
 type GaragePick = Pick<Database["public"]["Tables"]["garages"]["Row"], "id" | "owner_user_id">;
 type PlanPick = Pick<Database["public"]["Tables"]["dealer_plans"]["Row"], "id" | "code" | "monthly_price_chf" | "active" | "stripe_price_id">;
@@ -91,6 +117,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    const promoCode = normalizePromoCode(body.promo_code);
+    let promotionCodeId: string | null = null;
+    let trialDays: number | null = null;
+
+    if (promoCode) {
+      const invalidCode = { ok: false, error: "Dieser Code ist ungültig oder abgelaufen." };
+      if (!PROMO_CODE_PATTERN.test(promoCode)) return res.status(400).json(invalidCode);
+
+      const promos = await stripe.promotionCodes.list({
+        code: promoCode,
+        active: true,
+        limit: 1,
+        expand: ["data.coupon.applies_to"],
+      });
+      const promo = promos.data[0];
+      if (!promo || !promo.coupon?.valid) return res.status(400).json(invalidCode);
+
+      const restrictedProducts = promo.coupon.applies_to?.products ?? [];
+      const priceProduct = typeof stripePrice.product === "string" ? stripePrice.product : stripePrice.product?.id;
+      if (restrictedProducts.length > 0 && (!priceProduct || !restrictedProducts.includes(priceProduct))) {
+        return res.status(400).json({ ok: false, error: "Dieser Code gilt nicht für das gewählte Paket." });
+      }
+
+      promotionCodeId = promo.id;
+      trialDays = parseTrialDays(promo.metadata?.trial_days, promo.coupon.metadata?.trial_days);
+    }
+
     const protocol = (req.headers["x-forwarded-proto"] as string) || "http";
     const host = req.headers.host;
     const origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -109,13 +162,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
+      ...(promotionCodeId ? { discounts: [{ promotion_code: promotionCodeId }] } : {}),
       subscription_data: {
+        ...(trialDays ? { trial_period_days: trialDays } : {}),
         metadata: {
           kind: "dealer_plan",
           dealer_id: garage.id,
           plan_code: planCode,
           plan_id: plan.id,
           user_id: session.user.id,
+          ...(promoCode && promotionCodeId ? { promo_code: promoCode } : {}),
         },
       },
       metadata: {
@@ -124,6 +180,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         plan_code: planCode,
         plan_id: plan.id,
         user_id: session.user.id,
+        ...(promoCode && promotionCodeId ? { promo_code: promoCode } : {}),
       },
     });
 

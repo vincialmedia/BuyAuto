@@ -35,7 +35,10 @@ function addDaysIso(baseIso: string, days: number): string | null {
 function mapStripeSubscriptionStatus(
   status: Stripe.Subscription.Status
 ): "active" | "pending_change" | "canceled" | "past_due" {
-  if (status === "active") return "active";
+  // A trial from a promotion code (trial_days metadata, see api/dealer/prepare)
+  // is a paid-for entitlement until trial end: treat it like active, or the
+  // garage would sit without a plan until the first real invoice.
+  if (status === "active" || status === "trialing") return "active";
   if (status === "past_due" || status === "unpaid") return "past_due";
   if (status === "canceled") return "canceled";
   return "pending_change";

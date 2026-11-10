@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
 import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
@@ -25,6 +27,7 @@ export default function GaragePlanPage() {
   const userRole = profile?.role;
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<GaragePlanCode | null>(null);
+  const [promoCode, setPromoCode] = useState("");
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -76,6 +79,7 @@ export default function GaragePlanPage() {
           plan_code: planCode,
           success_path: successPath ?? undefined,
           cancel_path: cancelPath ?? undefined,
+          promo_code: promoCode.trim() || undefined,
         }),
       });
 
@@ -129,6 +133,25 @@ export default function GaragePlanPage() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 mt-10 space-y-8">
+          <div className="mx-auto max-w-md">
+            <Label htmlFor="promo-code" className="text-sm text-neutral-700">
+              Gutscheincode (optional)
+            </Label>
+            <Input
+              id="promo-code"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder="Code eingeben"
+              autoComplete="off"
+              maxLength={40}
+              disabled={loading}
+              className="mt-1 uppercase"
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              Hast du einen Code? Gib ihn ein und wähle dann dein Paket. Er wird beim Bezahlen abgezogen.
+            </p>
+          </div>
+
           <GaragePlanCards
             onSelect={(code) => void handleSelectPlan(code)}
             loadingCode={loading ? selectedPlan : null}
