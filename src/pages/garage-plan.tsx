@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { GaragePlanCards } from "@/components/buyauto/pricing/GaragePlanCards";
 import { GarageFeatureMatrix } from "@/components/buyauto/pricing/GarageFeatureMatrix";
 import { GarageTrustRow } from "@/components/buyauto/pricing/GarageTrustRow";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   GARAGE_CUSTOM_FROM_CHF,
   GARAGE_CUSTOM_THRESHOLD,
@@ -14,10 +16,7 @@ import {
   pricePerVehicleChf,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
-
-function isSafeNextPath(input: unknown): input is string {
-  return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
-}
+import { isSafeNextPath } from "@/lib/safe-next-path";
 
 export default function GaragePlanPage() {
   const router = useRouter();
@@ -25,6 +24,8 @@ export default function GaragePlanPage() {
   const userRole = profile?.role;
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<GaragePlanCode | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -42,6 +43,11 @@ export default function GaragePlanPage() {
       return;
     }
 
+    // No profile means it could not be loaded, so the role is unknown. Saying
+    // «nur für Garagen» to a garage with a network hiccup would be wrong; the
+    // plan buttons stay disabled (authReady) until a reload.
+    if (!profile) return;
+
     if (userRole !== "garage") {
       toast.error("Zugriff verweigert", {
         description: "Diese Seite ist nur für Garagen verfügbar.",
@@ -49,7 +55,29 @@ export default function GaragePlanPage() {
       router.replace("/");
       return;
     }
-  }, [user, userRole, router, profile]);
+    // authLoading and profileLoading belong in this list: for a logged-out
+    // visitor nothing else changes when auth finishes loading, so without
+    // them the effect never ran again and the page sat there with disabled
+    // buttons instead of sending the visitor to the login.
+  }, [user, userRole, router, profile, authLoading, profileLoading]);
+
+  // Put the cursor back into the code field when a code was refused. This
+  // waits for `loading` to end, because a disabled input cannot take focus.
+  useEffect(() => {
+    if (promoError && !loading) document.getElementById("promo-code")?.focus();
+  }, [promoError, loading]);
+
+  // The browser's Back button from Stripe restores this page from the
+  // back/forward cache, buttons still in their loading state.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setLoading(false);
+      setSelectedPlan(null);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const handleSelectPlan = async (planCode: GaragePlanCode) => {
     if (!user) return;
@@ -67,6 +95,12 @@ export default function GaragePlanPage() {
 
     setLoading(true);
     setSelectedPlan(planCode);
+    setPromoError(null);
+
+    // A problem with the code is shown at the code field, not as a toast.
+    let codeProblem = false;
+    // "You already have a plan" is an answer, not a failure.
+    let note: string | null = null;
 
     try {
       const response = await fetch("/api/dealer/prepare", {
@@ -76,12 +110,21 @@ export default function GaragePlanPage() {
           plan_code: planCode,
           success_path: successPath ?? undefined,
           cancel_path: cancelPath ?? undefined,
+          promo_code: promoCode.trim() || undefined,
         }),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Fehler beim Vorbereiten der Zahlung");
+        const payload = await response.json().catch(() => null);
+        const message =
+          typeof payload?.error === "string" && payload.error ? payload.error : "Fehler beim Vorbereiten der Zahlung";
+        if (payload?.field === "promo_code") {
+          codeProblem = true;
+          setPromoError(message);
+        }
+        if (payload?.code === "already_subscribed") note = "Dein Paket läuft bereits";
+        if (payload?.code === "payment_overdue") note = "Zahlung offen";
+        throw new Error(message);
       }
 
       const { url } = await response.json();
@@ -93,9 +136,13 @@ export default function GaragePlanPage() {
       window.location.href = url;
     } catch (error: any) {
       console.error("Plan selection error:", error);
-      toast.error("Fehler", {
-        description: error.message || "Bitte versuche es später erneut.",
-      });
+      if (note) {
+        toast.info(note, { description: error.message, duration: 12000 });
+      } else if (!codeProblem) {
+        toast.error("Fehler", {
+          description: error.message || "Bitte versuche es später erneut.",
+        });
+      }
       setLoading(false);
       setSelectedPlan(null);
     }
@@ -106,6 +153,8 @@ export default function GaragePlanPage() {
   // until we know a garage user is signed in. Logged-out / non-garage visitors
   // are redirected by the effect above.
   const authReady = Boolean(user && userRole === "garage");
+  // Signed in, but the profile (and with it the role) could not be loaded.
+  const profileMissing = Boolean(user && !profile && !authLoading && !profileLoading);
 
   return (
     <>
@@ -129,6 +178,47 @@ export default function GaragePlanPage() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 mt-10 space-y-8">
+          <div className="mx-auto max-w-md">
+            <Label htmlFor="promo-code" className="text-sm text-neutral-700">
+              Gutscheincode (optional)
+            </Label>
+            {/* Shown in capitals through CSS only; the server normalizes the
+                value. Rewriting it on every keystroke made the caret jump. */}
+            <Input
+              id="promo-code"
+              value={promoCode}
+              onChange={(e) => {
+                setPromoCode(e.target.value);
+                if (promoError) setPromoError(null);
+              }}
+              placeholder="Code eingeben"
+              autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={40}
+              disabled={loading}
+              aria-invalid={promoError ? true : undefined}
+              aria-describedby={promoError ? "promo-code-error promo-code-help" : "promo-code-help"}
+              className="mt-1 uppercase placeholder:normal-case"
+            />
+            {promoError && (
+              <p id="promo-code-error" role="alert" className="mt-1 text-xs text-red-600">
+                {promoError}
+              </p>
+            )}
+            <p id="promo-code-help" className="mt-1 text-xs text-neutral-500">
+              Hast du einen Code? Gib ihn hier ein und wähle dann dein Paket. Was er dir bringt, siehst du auf der
+              Zahlungsseite, bevor du bestätigst.
+            </p>
+          </div>
+
+          {profileMissing && (
+            <p role="alert" className="mx-auto max-w-md text-center text-sm text-red-600">
+              Dein Konto konnte nicht geladen werden. Bitte lade die Seite neu.
+            </p>
+          )}
+
           <GaragePlanCards
             onSelect={(code) => void handleSelectPlan(code)}
             loadingCode={loading ? selectedPlan : null}

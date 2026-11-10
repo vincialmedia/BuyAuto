@@ -5,6 +5,13 @@ import { buffer } from "micro";
 import { adminService } from "@/services/adminService";
 import { fulfillListingRelist } from "@/lib/billing/relist-fulfillment";
 import { getPlanDetails } from "@/lib/buyauto/stripe_config";
+import {
+  readInvoiceSubscriptionId,
+  syncDealerSubscription,
+  type DealerSyncDeps,
+  type StripeSubscriptionLike,
+  type TrackedSubscription,
+} from "@/lib/billing/dealer-subscription-sync";
 
 export const config = {
   api: {
@@ -12,18 +19,11 @@ export const config = {
   },
 };
 
+type SupabaseAdmin = ReturnType<typeof adminService.getSupabaseAdminClient>;
+
 function safeString(input: unknown): string | null {
   if (typeof input === "string" && input.trim().length > 0) return input;
   return null;
-}
-
-async function dealerGarageExists(
-  supabaseAdmin: ReturnType<typeof adminService.getSupabaseAdminClient>,
-  dealerId: string
-): Promise<boolean> {
-  const { data, error } = await supabaseAdmin.from("garages").select("id").eq("id", dealerId).maybeSingle();
-  if (error) return false;
-  return !!data?.id;
 }
 
 function addDaysIso(baseIso: string, days: number): string | null {
@@ -32,43 +32,29 @@ function addDaysIso(baseIso: string, days: number): string | null {
   return new Date(ms + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-function mapStripeSubscriptionStatus(
-  status: Stripe.Subscription.Status
-): "active" | "pending_change" | "canceled" | "past_due" {
-  if (status === "active") return "active";
-  if (status === "past_due" || status === "unpaid") return "past_due";
-  if (status === "canceled") return "canceled";
-  return "pending_change";
-}
-
+/**
+ * Copies the plan onto the garage (plan code and listing limit) and logs the
+ * change. Only called for a running subscription. Throws when the garage
+ * cannot be updated, so the delivery fails and Stripe sends the event again.
+ */
 async function applyDealerPlanSnapshot(input: {
-  supabaseAdmin: ReturnType<typeof adminService.getSupabaseAdminClient>;
+  supabaseAdmin: SupabaseAdmin;
   dealerId: string;
   planCode: string;
-}) {
+  previousPlanId: string | null;
+}): Promise<void> {
   const { data: plan, error: planError } = await input.supabaseAdmin
     .from("dealer_plans")
     .select("id, code, listing_limit")
     .eq("code", input.planCode)
     .maybeSingle();
 
-  if (planError) {
-    console.error("Webhook: Failed to fetch dealer plan", planError);
-    return null;
-  }
+  if (planError) throw planError;
 
   if (!plan?.id) {
     console.error("Webhook: Plan not found for code", input.planCode);
-    return null;
+    return;
   }
-
-  const { data: existingSub } = await input.supabaseAdmin
-    .from("dealer_subscriptions")
-    .select("plan_id")
-    .eq("dealer_id", input.dealerId)
-    .maybeSingle();
-
-  const fromPlanId = existingSub?.plan_id ?? null;
 
   const { error: garageUpdateError } = await input.supabaseAdmin
     .from("garages")
@@ -78,23 +64,64 @@ async function applyDealerPlanSnapshot(input: {
     })
     .eq("id", input.dealerId);
 
-  if (garageUpdateError) {
-    console.error("Webhook: Failed to update garage snapshot fields", garageUpdateError);
-  }
+  if (garageUpdateError) throw garageUpdateError;
+
+  // One log entry per real change: every Stripe event of a subscription ends
+  // up here, and most of them leave the plan as it was.
+  if (input.previousPlanId === plan.id) return;
 
   const { error: changeError } = await input.supabaseAdmin.from("dealer_plan_changes").insert({
     dealer_id: input.dealerId,
-    from_plan_id: fromPlanId,
+    from_plan_id: input.previousPlanId,
     to_plan_id: plan.id,
     status: "applied",
     notes: "Stripe subscription event",
   });
 
+  // The log is not worth failing a delivery over.
   if (changeError) {
     console.error("Webhook: Failed to insert plan change", changeError);
   }
+}
 
-  return plan;
+/** Stripe and database access for lib/billing/dealer-subscription-sync. Every function throws on failure. */
+function dealerSyncDeps(supabaseAdmin: SupabaseAdmin): DealerSyncDeps {
+  return {
+    async retrieveSubscription(subscriptionId) {
+      try {
+        return (await stripe.subscriptions.retrieve(subscriptionId)) as unknown as StripeSubscriptionLike;
+      } catch (error: unknown) {
+        // A subscription Stripe does not know cannot be synced, and sending
+        // the event again would not change that.
+        if ((error as { code?: unknown } | null)?.code === "resource_missing") return null;
+        throw error;
+      }
+    },
+
+    async garageExists(dealerId) {
+      const { data, error } = await supabaseAdmin.from("garages").select("id").eq("id", dealerId).maybeSingle();
+      if (error) throw error;
+      return Boolean(data?.id);
+    },
+
+    async loadTrackedSubscription(dealerId) {
+      const { data, error } = await supabaseAdmin
+        .from("dealer_subscriptions")
+        .select("plan_id, status, stripe_subscription_id, ended_at")
+        .eq("dealer_id", dealerId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as TrackedSubscription | null;
+    },
+
+    async writeSubscription(row) {
+      const { error } = await supabaseAdmin.from("dealer_subscriptions").upsert(row, { onConflict: "dealer_id" });
+      if (error) throw error;
+    },
+
+    applyPlan: ({ dealerId, planCode, previousPlanId }) =>
+      applyDealerPlanSnapshot({ supabaseAdmin, dealerId, planCode, previousPlanId }),
+  };
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -105,8 +132,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.warn("STRIPE_WEBHOOK_SECRET not set. Skipping webhook verification.");
-    return res.status(200).send("Webhook secret not configured.");
+    // Never answer 2xx here. Stripe treats a 2xx as delivered and does not
+    // send the event again, so a deployment without the secret would drop
+    // every payment and subscription event for good. A 5xx keeps Stripe
+    // retrying and shows the endpoint as failing in the Stripe Dashboard.
+    console.error("STRIPE_WEBHOOK_SECRET is not set. Refusing the event so that Stripe retries it.");
+    return res.status(500).send("Webhook secret not configured.");
   }
 
   const sig = req.headers["stripe-signature"];
@@ -131,6 +162,32 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // fulfillment.
   let fulfillmentError = false;
 
+  // Garage plans. An event only says "look at this subscription again": the
+  // state is fetched fresh from Stripe and written by
+  // lib/billing/dealer-subscription-sync, which also explains which events
+  // are ignored. A failed sync fails the delivery, so Stripe sends it again.
+  const syncDealer = async (subscriptionId: string, fromCheckout: boolean) => {
+    try {
+      const result = await syncDealerSubscription(dealerSyncDeps(supabaseAdmin), subscriptionId, { fromCheckout });
+
+      if (result.outcome === "ignored" && result.reason !== "not_dealer_plan") {
+        // "other_subscription": the garage has two running Stripe
+        // subscriptions. That needs a human, so it is logged as an error.
+        const log =
+          result.reason === "other_subscription" || result.reason === "missing_metadata" ? console.error : console.warn;
+        log("Webhook: dealer subscription not synced", {
+          reason: result.reason,
+          subscriptionId,
+          dealerId: result.dealerId ?? null,
+          eventType: event.type,
+        });
+      }
+    } catch (error: unknown) {
+      console.error("Webhook: dealer subscription sync failed", { subscriptionId, eventType: event.type, error });
+      fulfillmentError = true;
+    }
+  };
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -138,57 +195,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const metadata = session.metadata ?? {};
       const kind = safeString(metadata.kind);
       if (kind === "dealer_plan") {
-        const dealerId = safeString(metadata.dealer_id);
-        const planCode = safeString(metadata.plan_code);
-        const stripeCustomerId = typeof session.customer === "string" ? session.customer : null;
-        const stripeSubscriptionId = typeof session.subscription === "string" ? session.subscription : null;
+        const stripeSubscriptionId =
+          typeof session.subscription === "string" ? session.subscription : safeString(session.subscription?.id);
 
-        if (!dealerId || !planCode || !stripeCustomerId || !stripeSubscriptionId) {
-          console.error("Webhook: Missing dealer_plan metadata on checkout.session.completed", {
-            dealerId,
-            planCode,
-            stripeCustomerId,
-            stripeSubscriptionId,
-          });
+        if (!stripeSubscriptionId) {
+          console.error("Webhook: dealer_plan checkout completed without a subscription", { sessionId: session.id });
           break;
         }
 
-        if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
-          console.warn("Webhook: dealer not found (likely deleted), skipping", { dealerId, sessionId: session.id });
-          break;
-        }
-
-        const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-
-        const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
-        const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();
-
-        const { error: upsertSubError } = await supabaseAdmin
-          .from("dealer_subscriptions")
-          .upsert(
-            {
-              dealer_id: dealerId,
-              plan_id: safeString(metadata.plan_id) ?? null,
-              status: mapStripeSubscriptionStatus(subscription.status),
-              current_period_start: currentPeriodStartIso,
-              current_period_end: currentPeriodEndIso,
-              cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-              stripe_customer_id: stripeCustomerId,
-              stripe_subscription_id: stripeSubscriptionId,
-              cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
-              canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-              ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
-              grace_ends_at: subscription.ended_at ? addDaysIso(new Date(subscription.ended_at * 1000).toISOString(), 5) : null,
-            },
-            { onConflict: "dealer_id" }
-          );
-
-        if (upsertSubError) {
-          console.error("Webhook: Failed to upsert dealer subscription", upsertSubError);
-          break;
-        }
-
-        await applyDealerPlanSnapshot({ supabaseAdmin, dealerId, planCode });
+        await syncDealer(stripeSubscriptionId, true);
 
         break;
       }
@@ -246,81 +261,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       break;
     }
 
-    case "invoice.paid": {
-      const invoice = event.data.object as Stripe.Invoice;
-      const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : null;
-
-      if (!subscriptionId) break;
-
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const subMeta = subscription.metadata ?? {};
-      const kind = safeString(subMeta.kind);
-      if (kind !== "dealer_plan") break;
-
-      const dealerId = safeString(subMeta.dealer_id);
-      const planCode = safeString(subMeta.plan_code);
-
-      if (!dealerId || !planCode) break;
-
-      if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
-        console.warn("Webhook: dealer not found (likely deleted), skipping invoice.paid", { dealerId, subscriptionId });
-        break;
-      }
-
-      const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
-      const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();
-
-      const { error } = await supabaseAdmin
-        .from("dealer_subscriptions")
-        .upsert(
-          {
-            dealer_id: dealerId,
-            plan_id: safeString(subMeta.plan_id) ?? null,
-            status: mapStripeSubscriptionStatus(subscription.status),
-            current_period_start: currentPeriodStartIso,
-            current_period_end: currentPeriodEndIso,
-            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-            stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : null,
-            stripe_subscription_id: subscription.id,
-            cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
-            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-            ended_at: subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null,
-            grace_ends_at: subscription.ended_at ? addDaysIso(new Date(subscription.ended_at * 1000).toISOString(), 5) : null,
-          },
-          { onConflict: "dealer_id" }
-        );
-
-      if (error) console.error("Webhook: invoice.paid upsert dealer_subscriptions failed", error);
-
-      await applyDealerPlanSnapshot({ supabaseAdmin, dealerId, planCode });
-
-      break;
-    }
-
+    case "invoice.paid":
     case "invoice.payment_failed": {
-      const invoice = event.data.object as Stripe.Invoice;
-      const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : null;
+      // Either way the subscription behind the invoice may have changed
+      // (trial started, renewed, payment overdue), so read it again. Stripe
+      // decides when a failed payment makes it past_due, not this handler.
+      const subscriptionId = readInvoiceSubscriptionId(event.data.object);
       if (!subscriptionId) break;
 
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const subMeta = subscription.metadata ?? {};
-      const kind = safeString(subMeta.kind);
-      if (kind !== "dealer_plan") break;
-
-      const dealerId = safeString(subMeta.dealer_id);
-      if (!dealerId) break;
-
-      if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
-        console.warn("Webhook: dealer not found (likely deleted), skipping invoice.payment_failed", { dealerId, subscriptionId });
-        break;
-      }
-
-      const { error } = await supabaseAdmin
-        .from("dealer_subscriptions")
-        .update({ status: "past_due" })
-        .eq("dealer_id", dealerId);
-
-      if (error) console.error("Webhook: invoice.payment_failed update failed", error);
+      await syncDealer(subscriptionId, false);
 
       break;
     }
@@ -328,54 +277,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
-      const subMeta = subscription.metadata ?? {};
-      const kind = safeString(subMeta.kind);
+      if (safeString(subscription.metadata?.kind) !== "dealer_plan") break;
 
-      if (kind !== "dealer_plan") break;
-
-      const dealerId = safeString(subMeta.dealer_id);
-      const planCode = safeString(subMeta.plan_code);
-
-      if (!dealerId) break;
-
-      if (!(await dealerGarageExists(supabaseAdmin, dealerId))) {
-        console.warn("Webhook: dealer not found (likely deleted), skipping subscription event", { dealerId, subscriptionId: subscription.id });
-        break;
-      }
-
-      const currentPeriodStartIso = new Date(subscription.current_period_start * 1000).toISOString();
-      const currentPeriodEndIso = new Date(subscription.current_period_end * 1000).toISOString();
-
-      const endedAtIso = subscription.ended_at ? new Date(subscription.ended_at * 1000).toISOString() : null;
-      const graceEndsAtIso = endedAtIso ? addDaysIso(endedAtIso, 5) : null;
-
-      const status = mapStripeSubscriptionStatus(subscription.status);
-
-      const { error } = await supabaseAdmin
-        .from("dealer_subscriptions")
-        .upsert(
-          {
-            dealer_id: dealerId,
-            plan_id: safeString(subMeta.plan_id) ?? null,
-            status,
-            current_period_start: currentPeriodStartIso,
-            current_period_end: currentPeriodEndIso,
-            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-            stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : null,
-            stripe_subscription_id: subscription.id,
-            cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
-            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-            ended_at: endedAtIso,
-            grace_ends_at: graceEndsAtIso,
-          },
-          { onConflict: "dealer_id" }
-        );
-
-      if (error) console.error("Webhook: subscription updated upsert failed", error);
-
-      if (planCode) {
-        await applyDealerPlanSnapshot({ supabaseAdmin, dealerId, planCode });
-      }
+      // The payload is a snapshot from when the event was created and can
+      // arrive late or out of order: only its id is used.
+      await syncDealer(subscription.id, false);
 
       break;
     }
@@ -593,10 +499,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const listingId = paymentIntent.metadata?.listing_id;
       if (listingId) {
+        // Only for the intent currently attached to the listing, and never
+        // over a paid or refunded record. A declined first attempt is often
+        // followed by a successful one on the same intent, and Stripe may
+        // deliver this event after the success (or days later, as a retry):
+        // without these conditions it would turn a paid listing back into an
+        // unpaid one, which the publish and refund paths then act on.
         const { error } = await supabaseAdmin
           .from("listings")
           .update({ payment_status: "payment_failed" })
-          .eq("id", listingId);
+          .eq("id", listingId)
+          .eq("stripe_payment_intent_id", paymentIntent.id)
+          .or("payment_status.is.null,payment_status.not.in.(paid,refunded)");
 
         if (error) {
           console.error(`Webhook: Failed to update listing ${listingId} to payment_failed`, error);

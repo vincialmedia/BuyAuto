@@ -106,7 +106,9 @@ export function GarageBillingTab({ garage }: GarageBillingTabProps) {
       if (intervalId !== null) window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [garage?.id]);
+    // garage.plan is in the list so the tab reloads when the dashboard
+    // refreshes the garage after a checkout (the plan cards mark the new plan).
+  }, [garage?.id, garage?.plan]);
 
   const currentPlanDetails = useMemo(() => garagePlanFor(effectivePlanId), [effectivePlanId]);
 
