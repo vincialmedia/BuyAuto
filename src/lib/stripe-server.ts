@@ -16,6 +16,13 @@ function getStripe(): Stripe {
     if (!key) {
       throw new Error("STRIPE_SECRET_KEY is not configured");
     }
+    // The pinned version is part of the contract with api/billing/webhook
+    // and lib/billing/dealer-subscription-sync: they read the billing period
+    // from the subscription and the subscription id from the invoice where
+    // this version (and the webhook endpoint's own version) puts them. From
+    // 2025-03-31.basil both moved. The readers have a fallback for the new
+    // places, but change the pin only together with a test of a full garage
+    // checkout and a renewal.
     cachedStripe = new Stripe(key, {
       apiVersion: "2024-06-20" as Stripe.LatestApiVersion,
       typescript: true,

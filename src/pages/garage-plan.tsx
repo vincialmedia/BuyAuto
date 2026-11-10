@@ -16,10 +16,7 @@ import {
   pricePerVehicleChf,
   type GaragePlanCode,
 } from "@/lib/buyauto/garagePlans";
-
-function isSafeNextPath(input: unknown): input is string {
-  return typeof input === "string" && input.startsWith("/") && !input.startsWith("//");
-}
+import { isSafeNextPath } from "@/lib/safe-next-path";
 
 export default function GaragePlanPage() {
   const router = useRouter();
@@ -28,6 +25,7 @@ export default function GaragePlanPage() {
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<GaragePlanCode | null>(null);
   const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -52,7 +50,23 @@ export default function GaragePlanPage() {
       router.replace("/");
       return;
     }
-  }, [user, userRole, router, profile]);
+    // authLoading and profileLoading belong in this list: for a logged-out
+    // visitor nothing else changes when auth finishes loading, so without
+    // them the effect never ran again and the page sat there with disabled
+    // buttons instead of sending the visitor to the login.
+  }, [user, userRole, router, profile, authLoading, profileLoading]);
+
+  // The browser's Back button from Stripe restores this page from the
+  // back/forward cache, buttons still in their loading state.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setLoading(false);
+      setSelectedPlan(null);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const handleSelectPlan = async (planCode: GaragePlanCode) => {
     if (!user) return;
@@ -70,6 +84,10 @@ export default function GaragePlanPage() {
 
     setLoading(true);
     setSelectedPlan(planCode);
+    setPromoError(null);
+
+    // A problem with the code is shown at the code field, not as a toast.
+    let codeProblem = false;
 
     try {
       const response = await fetch("/api/dealer/prepare", {
@@ -84,8 +102,14 @@ export default function GaragePlanPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Fehler beim Vorbereiten der Zahlung");
+        const payload = await response.json().catch(() => null);
+        const message =
+          typeof payload?.error === "string" && payload.error ? payload.error : "Fehler beim Vorbereiten der Zahlung";
+        if (payload?.field === "promo_code") {
+          codeProblem = true;
+          setPromoError(message);
+        }
+        throw new Error(message);
       }
 
       const { url } = await response.json();
@@ -97,9 +121,13 @@ export default function GaragePlanPage() {
       window.location.href = url;
     } catch (error: any) {
       console.error("Plan selection error:", error);
-      toast.error("Fehler", {
-        description: error.message || "Bitte versuche es später erneut.",
-      });
+      if (codeProblem) {
+        document.getElementById("promo-code")?.focus();
+      } else {
+        toast.error("Fehler", {
+          description: error.message || "Bitte versuche es später erneut.",
+        });
+      }
       setLoading(false);
       setSelectedPlan(null);
     }
@@ -137,18 +165,34 @@ export default function GaragePlanPage() {
             <Label htmlFor="promo-code" className="text-sm text-neutral-700">
               Gutscheincode (optional)
             </Label>
+            {/* Shown in capitals through CSS only; the server normalizes the
+                value. Rewriting it on every keystroke made the caret jump. */}
             <Input
               id="promo-code"
               value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                setPromoCode(e.target.value);
+                if (promoError) setPromoError(null);
+              }}
               placeholder="Code eingeben"
               autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
               maxLength={40}
               disabled={loading}
-              className="mt-1 uppercase"
+              aria-invalid={promoError ? true : undefined}
+              aria-describedby={promoError ? "promo-code-error promo-code-help" : "promo-code-help"}
+              className="mt-1 uppercase placeholder:normal-case"
             />
-            <p className="mt-1 text-xs text-neutral-500">
-              Hast du einen Code? Gib ihn ein und wähle dann dein Paket. Er wird beim Bezahlen abgezogen.
+            {promoError && (
+              <p id="promo-code-error" role="alert" className="mt-1 text-xs text-red-600">
+                {promoError}
+              </p>
+            )}
+            <p id="promo-code-help" className="mt-1 text-xs text-neutral-500">
+              Hast du einen Code? Gib ihn hier ein und wähle dann dein Paket. Was er dir bringt, siehst du auf der
+              Zahlungsseite, bevor du bestätigst.
             </p>
           </div>
 

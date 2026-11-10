@@ -15,6 +15,7 @@ import { GarageStatsTab } from "@/components/buyauto/dashboard/GarageStatsTab";
 import { cn } from "@/lib/utils";
 import { dashboardService, type DashboardStats, type ListingInquiryCounts } from "@/services/dashboardService";
 import { getMyGarage, updateMyGarage, type Garage } from "@/services/garageService";
+import { supabase } from "@/integrations/supabase/client";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { ListingDetail } from "@/lib/buyauto/types";
 import { formatDealerEntitlementLabel, formatDateTimeDeCH, getDealerEntitlement, type DealerEntitlement } from "@/services/dealerEntitlementService";
@@ -39,6 +40,7 @@ export interface GarageDashboardProps {
 type BannerState =
   | { kind: "idle" }
   | { kind: "success"; message: string }
+  | { kind: "info"; message: string }
   | { kind: "error"; message: string };
 
 function getErrorMessage(error: unknown): string {
@@ -270,6 +272,67 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
     };
   }, [garage, hasMounted]);
 
+  // Back from Stripe Checkout (?payment_success=true). The webhook that
+  // records the plan can land a moment after the redirect, and this page was
+  // rendered on the server before it did. Without waiting here, a garage that
+  // has just subscribed reads «Kein Plan» and is one click away from
+  // subscribing a second time.
+  const garageId = garage?.id ?? null;
+  const returnedFromCheckout = router.isReady && router.query.payment_success === "true";
+
+  useEffect(() => {
+    if (!returnedFromCheckout || !garageId) return;
+
+    let cancelled = false;
+
+    async function waitForPlan() {
+      setBanner({
+        kind: "info",
+        message: "Danke für deine Buchung. Dein Paket wird gerade aktiviert, das dauert ein paar Sekunden.",
+      });
+
+      let active = false;
+      for (let attempt = 0; attempt < 14 && !cancelled && !active; attempt++) {
+        if (attempt > 0) await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        const { data: hasEntitlement } = await supabase.rpc("dealer_has_entitlement", { p_dealer_id: garageId });
+        active = Boolean(hasEntitlement);
+      }
+      if (cancelled) return;
+
+      if (active) {
+        try {
+          // The server-rendered garage still carries the plan from before the purchase.
+          const fresh = await getMyGarage();
+          if (!cancelled && fresh) setGarage(fresh);
+        } catch {
+          // The banner below is still true; the plan shows after a reload.
+        }
+        if (cancelled) return;
+        setBanner({ kind: "success", message: "Dein Paket ist aktiv. Du kannst jetzt Inserate erstellen." });
+      } else {
+        setBanner({
+          kind: "info",
+          message:
+            "Deine Buchung ist eingegangen, die Aktivierung dauert aber länger als üblich. Lade die Seite in einer Minute neu und buche bitte nicht nochmals. Fehlt dein Paket dann immer noch, melde dich bei uns: hello@buyauto.ch",
+        });
+      }
+
+      // Handled: drop the marker so a reload or a bookmark does not start this again.
+      const query = { ...router.query };
+      delete query.payment_success;
+      void router.replace({ pathname: router.pathname, query }, undefined, { shallow: true });
+    }
+
+    void waitForPlan();
+
+    return () => {
+      cancelled = true;
+    };
+    // `router` is left out on purpose: its identity changes with every route
+    // event, which would restart the wait.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnedFromCheckout, garageId]);
+
   async function reloadStatsAndListings() {
     if (!garage?.id) return;
 
@@ -440,11 +503,14 @@ export function GarageDashboard({ initialGarage }: GarageDashboardProps) {
           <div className="p-4 sm:p-6">
             {banner.kind !== "idle" && (
               <div
+                role="status"
                 className={cn(
                   "mb-4 rounded-2xl border px-4 py-3 text-sm",
                   banner.kind === "success"
                     ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                    : "border-red-200 bg-red-50 text-red-900"
+                    : banner.kind === "info"
+                      ? "border-amber-200 bg-amber-50 text-amber-900"
+                      : "border-red-200 bg-red-50 text-red-900"
                 )}
               >
                 {banner.message}
