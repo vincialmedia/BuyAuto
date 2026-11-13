@@ -71,15 +71,23 @@ function ended(n: number, brand: string, model: string, fields: Partial<IndexNow
 function source(
   live: IndexNowOffer[] | Error,
   endedRows: IndexNowEndedRow[] | null | Error,
-  grace: EndedTakeover[] | Error = []
-): IndexNowDataSource & { sinceSeen: Date[]; graceReads: number } {
+  grace: EndedTakeover[] | Error = [],
+  published: Map<string, string> | null | Error = new Map()
+): IndexNowDataSource & { sinceSeen: Date[]; publishedSinceSeen: Date[]; graceReads: number } {
   const sinceSeen: Date[] = [];
+  const publishedSinceSeen: Date[] = [];
   const src = {
     sinceSeen,
+    publishedSinceSeen,
     graceReads: 0,
     liveOffers: async () => {
       if (live instanceof Error) throw live;
       return live;
+    },
+    publishedSince: async (since: Date) => {
+      publishedSinceSeen.push(since);
+      if (published instanceof Error) throw published;
+      return published;
     },
     endedRows: async (since: Date) => {
       sinceSeen.push(since);
@@ -187,6 +195,47 @@ async function main() {
   const twoBmw = source([offer(1, "BMW", "X3", { updated: hoursAgo(2) }), offer(7, "BMW", "i4", {})], []);
   assert.deepEqual((await collectIndexNowUrls(twoBmw, NOW)).urls, [HUB, `${SITE}/leasinguebernahme/bmw`, `${SITE}/fahrzeug/bmw-x3-${id(1)}`]);
   assert.equal(twoBmw.graceReads, 0);
+
+  // --- Publication time: publishing leaves updated_at alone ---------------------------
+  // Last edited 60 h ago, approved 3 h ago: only published_at puts it in the window.
+  const lateApproval = offer(40, "BMW", "X5", { created: hoursAgo(70), updated: hoursAgo(60) });
+  const olderBmw = offer(41, "BMW", "X1", {}); // a second live BMW keeps the brand page indexable
+  const approvedUrls = [HUB, `${SITE}/leasinguebernahme/bmw`, `${SITE}/fahrzeug/bmw-x5-${id(40)}`];
+  const approvedSrc = source([lateApproval, olderBmw], [], [], new Map([[id(40), hoursAgo(3)]]));
+  const approved = await collectIndexNowUrls(approvedSrc, NOW);
+  assert.deepEqual(approved.errors, []);
+  assert.deepEqual(approved.urls, approvedUrls, "a listing published in the window is submitted with its hub and brand page");
+  assert.equal(approved.changedListings, 1);
+  assert.equal(approvedSrc.publishedSinceSeen.length, 1);
+  assert.equal(approvedSrc.publishedSinceSeen[0].toISOString(), hoursAgo(26), "publication times are read for the 26-hour window");
+  // Just inside and just outside the window.
+  const edge = await collectIndexNowUrls(source([lateApproval, olderBmw], [], [], new Map([[id(40), hoursAgo(25.9)]])), NOW);
+  assert.deepEqual(edge.urls, approvedUrls);
+  const tooOld = await collectIndexNowUrls(source([lateApproval, olderBmw], [], [], new Map([[id(40), hoursAgo(27)]])), NOW);
+  assert.deepEqual(tooOld.urls, [], "published before the window: out");
+  // A publication time in the future or one that does not parse counts for nothing.
+  const future = new Map([[id(40), new Date(NOW.getTime() + HOUR_MS).toISOString()]]);
+  assert.deepEqual((await collectIndexNowUrls(source([lateApproval, olderBmw], [], [], future), NOW)).urls, []);
+  assert.deepEqual((await collectIndexNowUrls(source([lateApproval, olderBmw], [], [], new Map([[id(40), "not a date"]])), NOW)).urls, []);
+  // A publication time for a listing that is not live (no row in the offer index) adds nothing.
+  const notLive = await collectIndexNowUrls(source([olderBmw], [], [], new Map([[id(40), hoursAgo(3)]])), NOW);
+  assert.deepEqual(notLive.urls, []);
+  // The newest change orders the list: published 3 h ago comes before updated 5 h ago.
+  const ordered = await collectIndexNowUrls(
+    source([lateApproval, offer(7, "BMW", "i4", { updated: hoursAgo(5) })], [], [], new Map([[id(40), hoursAgo(3)]])),
+    NOW
+  );
+  assert.deepEqual(ordered.urls.slice(2), [`${SITE}/fahrzeug/bmw-x5-${id(40)}`, `${SITE}/fahrzeug/bmw-i4-${id(7)}`]);
+  // No service-role key (null): matched on created_at and updated_at only, no error.
+  const noPublished = await collectIndexNowUrls(source([lateApproval, live[0]], [], [], null), NOW);
+  assert.deepEqual(noPublished.errors, []);
+  assert.ok(!noPublished.urls.includes(`${SITE}/fahrzeug/bmw-x5-${id(40)}`));
+  assert.ok(noPublished.urls.includes(`${SITE}/fahrzeug/bmw-x3-${id(1)}`), "updated listings are still collected");
+  // A failed read is reported and the run goes on with created_at and updated_at.
+  const publishedFails = await collectIndexNowUrls(source([lateApproval, live[0]], [], [], new Error("timeout")), NOW);
+  assert.deepEqual(publishedFails.errors, ["publication times: timeout"]);
+  assert.ok(publishedFails.urls.includes(`${SITE}/fahrzeug/bmw-x3-${id(1)}`));
+  assert.ok(!publishedFails.urls.includes(`${SITE}/fahrzeug/bmw-x5-${id(40)}`));
 
   // Only a Direktkauf changed: no hub, no brand page.
   const onlyDirect = await collectIndexNowUrls(source([live[4]], []), NOW);

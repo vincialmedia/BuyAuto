@@ -70,6 +70,13 @@ export interface IndexNowDataSource {
   /** Every published, unexpired listing (getPublicOfferIndex). */
   liveOffers(): Promise<IndexNowOffer[]>;
   /**
+   * When the listings published since `since` went live: listing id → published_at.
+   * Publishing leaves updated_at alone and the offer index has no published_at, so a
+   * listing approved more than a day after its last edit is only caught through this.
+   * null when it cannot be read (no service-role key).
+   */
+  publishedSince(since: Date): Promise<Map<string, string> | null>;
+  /**
    * Rows that can have ended since `since`: status expired, sold, archived, or published
    * past its expiry. null when the rows cannot be read (no service-role key).
    */
@@ -118,8 +125,10 @@ export function indexNowSince(now: Date): Date {
  * The URLs to submit for the window ending at `now`. Never throws: a failed read is
  * reported in `errors` and the run goes on with the other source.
  *
- * A listing counts when it was created or updated in the window (live) or ended in the
- * window (expired, sold, archived, or published past its expiry; its URL now redirects).
+ * A listing counts when it was created, published or updated in the window (live) or
+ * ended in the window (expired, sold, archived, or published past its expiry; its URL
+ * now redirects). Without the publication times a live listing is matched on created_at
+ * and updated_at alone.
  * For a Leasingübernahme the hub and its brand page change too, so the hub is added
  * and the brand page under the rule in the module comment; a Direktkauf adds only its
  * own URL.
@@ -133,12 +142,24 @@ export async function collectIndexNowUrls(source: IndexNowDataSource, now: Date 
   type Change = { href: string; brand: string | null; takeover: boolean; ended: boolean; at: number };
   const changes: Change[] = [];
 
+  // A failed or missing read leaves the created_at/updated_at match in place.
+  let publishedAt: Map<string, string> | null = null;
+  try {
+    publishedAt = await source.publishedSince(since);
+  } catch (error) {
+    errors.push(`publication times: ${errorText(error)}`);
+  }
+
   let liveRows: IndexNowOffer[] | null = null;
   let changedListings = 0;
   try {
     liveRows = await source.liveOffers();
     for (const row of liveRows) {
-      const at = Math.max(timeMs(row.updated_at) ?? -Infinity, timeMs(row.created_at) ?? -Infinity);
+      const at = Math.max(
+        timeMs(row.updated_at) ?? -Infinity,
+        timeMs(row.created_at) ?? -Infinity,
+        timeMs(publishedAt?.get(row.id)) ?? -Infinity
+      );
       if (!inWindow(Number.isFinite(at) ? at : null, sinceMs, nowMs)) continue;
       changedListings += 1;
       changes.push({
