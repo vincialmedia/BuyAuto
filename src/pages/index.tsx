@@ -12,7 +12,6 @@ import { SearchBarV2 } from "@/components/buyauto/SearchBarV2";
 import { WhyBuyAutoSection } from "@/components/buyauto/WhyBuyAutoSection";
 import { LazyHydrate } from "@/components/layout/LazyHydrate";
 import { Button } from "@/components/ui/button";
-import { countLabel, pluralize } from "@/lib/buyauto/format";
 import type { SearchQuery } from "@/lib/buyauto/search";
 import type { Listing } from "@/lib/buyauto/types";
 import { searchListingsOrThrow } from "@/services/listingsService";
@@ -33,14 +32,9 @@ const HOME_TAKEOVER_QUERY: SearchQuery = { dealType: "lease_takeover", page: 1, 
 interface HomePageProps {
   /** Up to 12 live Leasingübernahmen, in the hub's order. */
   takeoverListings: Listing[];
-  /** All live Leasingübernahmen right now (the hub's count). */
-  liveTakeoverCount: number;
 }
 
-export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePageProps) {
-  // No number without live offers: an empty inventory hides the line.
-  const liveCount = liveTakeoverCount > 0 ? liveTakeoverCount : null;
-
+export default function HomePage({ takeoverListings }: HomePageProps) {
   return (
     <div className="bg-[#fafafa] min-h-screen font-sans overflow-x-hidden">
       <Head>
@@ -134,7 +128,7 @@ export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePa
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/70 to-neutral-900/40" />
         </div>
 
-        {/* pt-6 on phones keeps the head-term line and the live count inside the 60vh
+        {/* pt-6 on phones keeps the head-term line inside the 60vh
             hero, so the search bar stays where it was (y ≈ 540 at 390×844). */}
         <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-6 sm:pt-20 pb-16">
           <div className="text-center">
@@ -150,16 +144,6 @@ export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePa
             <p className="animate-fade-up-2 text-lg sm:text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto drop-shadow-md">
               Ein Schweizer Marktplatz für Leasingübernahmen: Übernimm ein laufendes Leasing oder gib deins ab.
             </p>
-            {/* Live count only: the hub's query, so this number and the hub's title agree.
-                The sourced fee line moved off the hero; the cost page carries the fees. */}
-            {liveCount !== null && (
-              <p className="animate-fade-up-2 mt-5 sm:mt-6 max-w-xl mx-auto text-sm sm:text-base text-white drop-shadow-md">
-                <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle" />
-                Auf BuyAuto {pluralize(liveCount, "wartet", "warten")} gerade{" "}
-                <strong className="font-bold">{countLabel(liveCount, "Leasingvertrag", "Leasingverträge")}</strong> auf eine
-                Übernahme
-              </p>
-            )}
           </div>
         </div>
       </section>
@@ -179,7 +163,7 @@ export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePa
         </div>
       </div>
 
-      <HomeTakeoverOffers listings={takeoverListings} totalCount={liveTakeoverCount} />
+      <HomeTakeoverOffers listings={takeoverListings} />
 
       {/* Everything below the offers section is out of the first viewport on
           every device; LazyHydrate keeps it fully in the server HTML (SEO
@@ -299,18 +283,16 @@ export default function HomePage({ takeoverListings, liveTakeoverCount }: HomePa
   );
 }
 
-// ISR: the offers and the live count are part of the static HTML (no client
+// ISR: the offers are part of the static HTML (no client
 // fetch, no layout shift) and refresh in the background every 5 minutes.
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  // One query for the grid and the count, so they can't disagree. A failed read
-  // throws, so ISR keeps the last good page instead of caching an empty grid.
+  // A failed read throws, so ISR keeps the last good page instead of caching an empty grid.
   const result = await searchListingsOrThrow(HOME_TAKEOVER_QUERY);
 
   return {
     props: {
       // Strips undefined fields so Next can serialize the props.
       takeoverListings: JSON.parse(JSON.stringify(result.items)) as Listing[],
-      liveTakeoverCount: result.total,
     },
     revalidate: 300,
   };

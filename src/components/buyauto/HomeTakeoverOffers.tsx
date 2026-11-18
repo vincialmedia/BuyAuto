@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ModernListingCard } from "@/components/buyauto/search/ModernListingCard";
 import { LazyHydrate } from "@/components/layout/LazyHydrate";
-import { countLabel } from "@/lib/buyauto/format";
 import type { Listing } from "@/lib/buyauto/types";
 
 /** The Leasingübernahme hub: every live offer, self-canonical. */
@@ -11,8 +10,6 @@ const HUB_HREF = "/suche?dealType=lease_takeover";
 interface HomeTakeoverOffersProps {
   /** The hub's first offers in the hub's own order: premium first, then newest. */
   listings: Listing[];
-  /** All live Leasingübernahmen, from the same query as the hub. */
-  totalCount: number;
 }
 
 /**
@@ -23,11 +20,9 @@ interface HomeTakeoverOffersProps {
  * Geometry matches the section it replaced: the card is pulled up under the
  * search bar (-mt-16 / sm:-mt-20), and the top padding clears the bar.
  */
-export function HomeTakeoverOffers({ listings, totalCount }: HomeTakeoverOffersProps) {
-  const ctaLabel =
-    totalCount > listings.length
-      ? `Alle ${countLabel(totalCount, "Leasingübernahme", "Leasingübernahmen")} ansehen`
-      : "Alle Leasingübernahmen ansehen";
+export function HomeTakeoverOffers({ listings }: HomeTakeoverOffersProps) {
+  // No count in the label: a small live number makes the marketplace look thin.
+  const ctaLabel = "Alle Leasingübernahmen ansehen";
 
   return (
     <section aria-labelledby="aktuelle-leasinguebernahmen" className="relative z-10 -mt-16 sm:-mt-20 pb-16 sm:pb-20">
